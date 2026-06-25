@@ -1,0 +1,51 @@
+{
+  "name": "capibara-pet",
+  "displayName": "Capibara Pet",
+  "description": "Una capibara mascota que vive en un panel de tu editor: camina, corre cuando escribes, se asusta con los errores, toma cafe y duerme.",
+  "version": "0.2.0",
+  "publisher": "your-publisher-id",
+  "license": "MIT",
+  "author": { "name": "Juan Carlos Condori" },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["capybara", "capibara", "pet", "mascota", "fun", "animation"],
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#FBE9C8",
+    "theme": "light"
+  },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "capibaraPetContainer",
+          "title": "Capibara Pet",
+          "icon": "media/pet-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "capibaraPetContainer": [
+        {
+          "type": "webview",
+          "id": "capibaraPet.view",
+          "name": "Capibara"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node ./node_modules/typescript/bin/tsc -p ./",
+    "watch": "node ./node_modules/typescript/bin/tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

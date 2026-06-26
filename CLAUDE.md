@@ -107,4 +107,6 @@ the `SHEETS` object (frame count) in `src/extension.ts`.
 - [ ] Publish to the Marketplace (see Goal).
 - [ ] (Optional) Initialize git + add `"repository"` to package.json so the README and
       its links render fully on the Marketplace page.
-- [ ] (Optional) Command to show/hide or adjust size/speed from settings.
+- [x] Settings for size/speed/idle timings + reactToErrors (`contributes.configuration`,
+      read in `html()`, live refresh via `onDidChangeConfiguration`).
+- [ ] (Optional) Command to show/hide the pet from the command palette.

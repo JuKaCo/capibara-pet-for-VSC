@@ -2,6 +2,16 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.4.0]
+
+### Added
+- **Settings** to customize the pet (applied live, no reload needed):
+  - `capibaraPet.size` — size in pixels.
+  - `capibaraPet.speed` — walk/run speed multiplier.
+  - `capibaraPet.coffeeAfterSeconds` — idle time before the coffee break.
+  - `capibaraPet.sleepAfterSeconds` — idle time before sleeping.
+  - `capibaraPet.reactToErrors` — toggle the "scared" reaction to errors.
+
 ## [0.3.0]
 
 ### Added

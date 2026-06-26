@@ -2,10 +2,13 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "A capybara pet that lives in a panel of your editor: it walks, runs while you type, gets scared by errors, sips coffee, and sleeps.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
+  "repository": { "type": "git", "url": "https://github.com/JuKaCo/capibara-pet-for-VSC.git" },
+  "bugs": { "url": "https://github.com/JuKaCo/capibara-pet-for-VSC/issues" },
+  "homepage": "https://github.com/JuKaCo/capibara-pet-for-VSC#readme",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -29,6 +32,44 @@
           "visibility": "visible"
         }
       ]
+    },
+    "configuration": {
+      "title": "Capibara Pet",
+      "properties": {
+        "capibaraPet.size": {
+          "type": "number",
+          "default": 84,
+          "minimum": 40,
+          "maximum": 160,
+          "markdownDescription": "Size of the capybara, in pixels."
+        },
+        "capibaraPet.speed": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.25,
+          "maximum": 3,
+          "markdownDescription": "Movement speed multiplier for walking and running (`1` = default)."
+        },
+        "capibaraPet.coffeeAfterSeconds": {
+          "type": "number",
+          "default": 6,
+          "minimum": 1,
+          "maximum": 600,
+          "markdownDescription": "Seconds of inactivity before the capybara takes a coffee break."
+        },
+        "capibaraPet.sleepAfterSeconds": {
+          "type": "number",
+          "default": 15,
+          "minimum": 2,
+          "maximum": 3600,
+          "markdownDescription": "Seconds of inactivity before the capybara falls asleep."
+        },
+        "capibaraPet.reactToErrors": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Whether the capybara gets scared when the active file has errors."
+        }
+      }
     }
   },
   "scripts": {

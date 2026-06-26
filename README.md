@@ -1,5 +1,10 @@
 # 🐾 Capibara Pet
 
+[![Version](https://img.shields.io/visual-studio-marketplace/v/JuanCarlosCondori.capibara-pet?label=Marketplace&color=8a2be2)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/JuanCarlosCondori.capibara-pet?color=blue)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/JuanCarlosCondori.capibara-pet?color=gold)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet&ssr=false#review-details)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 A little capybara pet that lives in a panel inside your VS Code editor. It strolls around calmly, runs while you type, gets scared when there are errors, sips its coffee during short breaks, and falls asleep if you leave it alone for a while.
 
 Animated with spritesheets and CSS — flicker-free and never in the way of your code.
@@ -23,6 +28,18 @@ The capybara reacts to what you do:
 1. Install the extension.
 2. Open the **Explorer** (`Ctrl+Shift+E` / `Cmd+Shift+E`). At the bottom you'll find a **"Capibara"** section — expand it and the pet appears in its little box.
 3. Want it somewhere else? Just **drag the "Capibara" section** to another spot — for example into the **Secondary Side Bar** (`Ctrl+Alt+B`) to keep it pinned in a corner. VS Code remembers the position.
+
+## Settings
+
+Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pet". Changes apply live.
+
+| Setting | Default | What it does |
+|---------|:-------:|--------------|
+| `capibaraPet.size` | `84` | Size of the capybara, in pixels (40–160). |
+| `capibaraPet.speed` | `1` | Walk/run speed multiplier (0.25–3). |
+| `capibaraPet.coffeeAfterSeconds` | `6` | Idle seconds before the coffee break. |
+| `capibaraPet.sleepAfterSeconds` | `15` | Idle seconds before falling asleep. |
+| `capibaraPet.reactToErrors` | `true` | Whether it gets scared when the file has errors. |
 
 ## Install from the Marketplace
 

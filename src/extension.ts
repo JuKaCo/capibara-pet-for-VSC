@@ -46,6 +46,11 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     this.view?.webview.postMessage({ type });
   }
 
+  // Rebuild the webview when settings change so size/speed/timings apply live.
+  refresh() {
+    if (this.view) { this.view.webview.html = this.html(this.view.webview); }
+  }
+
   private uri(webview: vscode.Webview, name: string): string {
     return webview
       .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', name + '.png'))
@@ -53,7 +58,13 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   }
 
   private html(webview: vscode.Webview): string {
-    const DISP = 84;
+    const cfg = vscode.workspace.getConfiguration('capibaraPet');
+    const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+    const DISP = Math.round(clamp(cfg.get<number>('size', 84), 40, 160));
+    const speed = clamp(cfg.get<number>('speed', 1), 0.25, 3);
+    const TICK = 70;
+    const coffeeAfter = Math.round(clamp(cfg.get<number>('coffeeAfterSeconds', 6), 1, 600) * 1000 / TICK);
+    const sleepAfter = Math.round(clamp(cfg.get<number>('sleepAfterSeconds', 15), 2, 3600) * 1000 / TICK);
     const states = Object.keys(SHEETS);
 
     const classes = states.map((s) => {
@@ -68,7 +79,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
       `@keyframes play${n}{from{background-position-x:0;}to{background-position-x:-${n * DISP}px;}}`
     ).join('\n  ');
 
-    const move = JSON.stringify({ walk: 1.2, run: 3.0 });
+    const move = JSON.stringify({ walk: 1.2 * speed, run: 3.0 * speed });
 
     const nonce = Array.from({ length: 32 }, () =>
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
@@ -107,9 +118,9 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 </div>
 <script nonce="${nonce}">
   const MOVE = ${move};
-  const TICK = 70;
-  const COFFEE_AFTER = 90;   // ~6 s -> coffee break
-  const SLEEP_AFTER = 210;   // ~15 s -> falls asleep
+  const TICK = ${TICK};
+  const COFFEE_AFTER = ${coffeeAfter};   // inactivity ticks -> coffee break
+  const SLEEP_AFTER = ${sleepAfter};   // inactivity ticks -> falls asleep
   const PET = ${DISP};
 
   const pet = document.getElementById('pet');
@@ -211,8 +222,12 @@ export function activate(context: vscode.ExtensionContext) {
         .getDiagnostics(ed.document.uri)
         .some((d) => d.severity === vscode.DiagnosticSeverity.Error);
       // Only react when we just *entered* an error state (avoids constant spam).
-      if (hasErrors && !hadErrors) { provider.notify('scared'); }
+      const react = vscode.workspace.getConfiguration('capibaraPet').get<boolean>('reactToErrors', true);
+      if (react && hasErrors && !hadErrors) { provider.notify('scared'); }
       hadErrors = hasErrors;
+    }),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('capibaraPet')) { provider.refresh(); }
     })
   );
 }

@@ -2,6 +2,13 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.5.0]
+
+### Added
+- **Command palette** commands (category "Capibara Pet"):
+  - **Show the Capybara** — reveals/focuses the pet's view.
+  - **Pet the Capybara** — give it a little love; it hops with a ❤️.
+
 ## [0.4.0]
 
 ### Added

@@ -29,6 +29,15 @@ The capybara reacts to what you do:
 2. Open the **Explorer** (`Ctrl+Shift+E` / `Cmd+Shift+E`). At the bottom you'll find a **"Capibara"** section — expand it and the pet appears in its little box.
 3. Want it somewhere else? Just **drag the "Capibara" section** to another spot — for example into the **Secondary Side Bar** (`Ctrl+Alt+B`) to keep it pinned in a corner. VS Code remembers the position.
 
+## Commands
+
+Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Capibara Pet":
+
+| Command | What it does |
+|---------|--------------|
+| **Capibara Pet: Show the Capybara** | Reveals and focuses the pet's view. |
+| **Capibara Pet: Pet the Capybara** | Give it some love — it hops with a ❤️. |
+
 ## Settings
 
 Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pet". Changes apply live.

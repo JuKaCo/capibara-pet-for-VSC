@@ -187,6 +187,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     else if (m.type === 'celebrate') celebrateFor = 26;
     else if (m.type === 'scared') scaredFor = 24;
     else if (m.type === 'jump') jumpFor = 9;
+    else if (m.type === 'pet') { jumpFor = 9; heart(); }
   });
 </script>
 </body>
@@ -202,7 +203,10 @@ export function activate(context: vscode.ExtensionContext) {
       CapibaraViewProvider.viewId,
       provider,
       { webviewOptions: { retainContextWhenHidden: true } }
-    )
+    ),
+    vscode.commands.registerCommand('capibaraPet.show', () =>
+      vscode.commands.executeCommand('capibaraPet.view.focus')),
+    vscode.commands.registerCommand('capibaraPet.pet', () => provider.notify('pet'))
   );
 
   let lastLine = -1;

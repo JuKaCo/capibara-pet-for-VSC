@@ -109,4 +109,5 @@ the `SHEETS` object (frame count) in `src/extension.ts`.
       its links render fully on the Marketplace page.
 - [x] Settings for size/speed/idle timings + reactToErrors (`contributes.configuration`,
       read in `html()`, live refresh via `onDidChangeConfiguration`).
-- [ ] (Optional) Command to show/hide the pet from the command palette.
+- [x] Palette commands: `capibaraPet.show` (focus the view) and `capibaraPet.pet`
+      (hop + ❤️ via a `pet` message to the webview).

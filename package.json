@@ -2,7 +2,7 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "A capybara pet that lives in a panel of your editor: it walks, runs while you type, gets scared by errors, sips coffee, and sleeps.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
@@ -33,6 +33,18 @@
         }
       ]
     },
+    "commands": [
+      {
+        "command": "capibaraPet.show",
+        "title": "Show the Capybara",
+        "category": "Capibara Pet"
+      },
+      {
+        "command": "capibaraPet.pet",
+        "title": "Pet the Capybara",
+        "category": "Capibara Pet"
+      }
+    ],
     "configuration": {
       "title": "Capibara Pet",
       "properties": {

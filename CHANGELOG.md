@@ -2,6 +2,27 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.6.0]
+
+### Added
+- **Idle micro-behaviour**: while strolling, the capybara now takes the occasional
+  break, sometimes glances the other way, and gently "breathes" while standing —
+  so it feels more alive (no extra art, respects `prefers-reduced-motion`).
+- **Status bar mood**: an optional 🦫 status bar item mirrors the current mood and
+  focuses the view on click (`capibaraPet.statusBar`).
+- **Name your pet**: `capibaraPet.name` shows as a hover tooltip and in the status bar.
+- **Speech bubbles**: little messages when saving, sleeping, taking coffee or being
+  petted (`capibaraPet.bubbles`).
+- **Typing intensity**: the capybara runs faster the faster you type.
+- The capybara now **celebrates when a debug session starts** (toggle with
+  `capibaraPet.reactToDebug`).
+- New `capibaraPet.enabled` setting to **show/hide** the pet without uninstalling.
+- **Click anywhere** in the panel to pet the capybara (not just on the sprite).
+
+### Changed
+- **Pet the Capybara** command now focuses the view first, so it always has a
+  visible effect.
+
 ## [0.5.0]
 
 ### Added

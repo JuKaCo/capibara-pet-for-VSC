@@ -18,7 +18,7 @@ The capybara reacts to what you do:
 | 🚶 **Walk** | Default — strolling around the panel |
 | 🏃 **Run** | While you type |
 | 🦘 **Jump** | When you move to another line |
-| 🎉 **Celebrate** | When you save a file |
+| 🎉 **Celebrate** | When you save a file, or start a debug session |
 | 😱 **Scared** | When the file has errors |
 | ☕ **Coffee** | After a medium pause (~6 s) |
 | 😴 **Sleep** | After a long pause (~15 s) — with its 💤 |
@@ -44,11 +44,19 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 
 | Setting | Default | What it does |
 |---------|:-------:|--------------|
+| `capibaraPet.enabled` | `true` | Show the capybara. Turn off to hide it without uninstalling. |
 | `capibaraPet.size` | `84` | Size of the capybara, in pixels (40–160). |
 | `capibaraPet.speed` | `1` | Walk/run speed multiplier (0.25–3). |
 | `capibaraPet.coffeeAfterSeconds` | `6` | Idle seconds before the coffee break. |
 | `capibaraPet.sleepAfterSeconds` | `15` | Idle seconds before falling asleep. |
 | `capibaraPet.reactToErrors` | `true` | Whether it gets scared when the file has errors. |
+| `capibaraPet.reactToDebug` | `true` | Whether it celebrates when a debug session starts. |
+| `capibaraPet.name` | `""` | Give your capybara a name (shown on hover and in the status bar). |
+| `capibaraPet.bubbles` | `true` | Show small speech bubbles (saving, sleeping, petting…). |
+| `capibaraPet.statusBar` | `true` | Show a status bar item that mirrors the current mood. |
+
+> Tip: **click anywhere in the panel** to pet the capybara — it hops with a ❤️.
+> The capybara also **runs faster the faster you type**.
 
 ## Install from the Marketplace
 

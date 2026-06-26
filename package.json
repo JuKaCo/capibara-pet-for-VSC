@@ -2,7 +2,7 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "A capybara pet that lives in a panel of your editor: it walks, runs while you type, gets scared by errors, sips coffee, and sleeps.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
@@ -48,6 +48,11 @@
     "configuration": {
       "title": "Capibara Pet",
       "properties": {
+        "capibaraPet.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show the capybara. Turn off to hide it without uninstalling."
+        },
         "capibaraPet.size": {
           "type": "number",
           "default": 84,
@@ -80,6 +85,26 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Whether the capybara gets scared when the active file has errors."
+        },
+        "capibaraPet.reactToDebug": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Whether the capybara celebrates when a debug session starts."
+        },
+        "capibaraPet.name": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Give your capybara a name. Shown as a tooltip on hover and in the status bar."
+        },
+        "capibaraPet.bubbles": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show small speech bubbles (e.g. when saving, sleeping, or petting)."
+        },
+        "capibaraPet.statusBar": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show a status bar item that mirrors the capybara's current mood."
         }
       }
     }

@@ -7,12 +7,14 @@ import * as vscode from 'vscode';
 //   walk      strolls around (default)
 //   run       runs while you type
 //   jump      hops when you change line
-//   celebrate cheers when you save
+//   celebrate cheers when you save (or when a debug session starts)
 //   scared    gets scared if the file has errors
 //   coffee    sips coffee during medium pauses
 //   sleep     sleeps after a long pause (the sprite already carries 💤)
 // Click the capybara -> it hops and a heart floats up. The animation pauses when
 // the view is hidden, and it respects the user's prefers-reduced-motion setting.
+// The webview reports its mood back so a status bar item can mirror it; speech
+// bubbles, the pet's name, and typing-intensity speed are all configurable.
 
 interface SheetCfg { n: number; dur: number; }
 const SHEETS: { [s: string]: SheetCfg } = {
@@ -28,6 +30,7 @@ const SHEETS: { [s: string]: SheetCfg } = {
 class CapibaraViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = 'capibaraPet.view';
   private view?: vscode.WebviewView;
+  public onState?: (s: string) => void;
 
   constructor(private readonly extensionUri: vscode.Uri) {}
 
@@ -40,6 +43,10 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     view.webview.html = this.html(view.webview);
     // Pause the animation loop while the view is not visible (saves CPU/battery).
     view.onDidChangeVisibility(() => this.notify(view.visible ? 'resume' : 'pause'));
+    // The webview reports its current mood so the status bar can mirror it.
+    view.webview.onDidReceiveMessage((m) => {
+      if (m && m.type === 'state' && this.onState) { this.onState(m.s); }
+    });
   }
 
   notify(type: string) {
@@ -59,6 +66,11 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 
   private html(webview: vscode.Webview): string {
     const cfg = vscode.workspace.getConfiguration('capibaraPet');
+    if (!cfg.get<boolean>('enabled', true)) {
+      // Hidden: render an empty, locked-down document.
+      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">` +
+        `<meta http-equiv="Content-Security-Policy" content="default-src 'none';"></head><body></body></html>`;
+    }
     const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
     const DISP = Math.round(clamp(cfg.get<number>('size', 84), 40, 160));
     const speed = clamp(cfg.get<number>('speed', 1), 0.25, 3);
@@ -80,6 +92,10 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     ).join('\n  ');
 
     const move = JSON.stringify({ walk: 1.2 * speed, run: 3.0 * speed });
+    const name = (cfg.get<string>('name', '') || '').trim();
+    const bubbles = cfg.get<boolean>('bubbles', true);
+    const esc = (t: string) =>
+      t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     const nonce = Array.from({ length: 32 }, () =>
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
@@ -95,16 +111,30 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 <style nonce="${nonce}">
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { width:100%; height:100%; background:transparent; overflow:hidden; }
-  #stage { position:relative; width:100%; height:100%; min-height:96px; }
+  #stage { position:relative; width:100%; height:100%; min-height:96px; cursor:pointer; }
   #floor { position:absolute; left:0; right:0; bottom:0; height:2px;
     background:var(--vscode-editorIndentGuide-background, #ffffff22); }
   #pet { position:absolute; bottom:4px; left:20px; width:${DISP}px; height:${DISP}px;
     transition:transform .08s linear; cursor:pointer; }
+  #breath { width:100%; height:100%; transform-origin:bottom center; }
+  #breath.breathing { animation:breathe 3.2s ease-in-out infinite; }
+  @keyframes breathe { 0%,100%{transform:scaleY(1);} 50%{transform:scaleY(1.035);} }
   #sprite { width:100%; height:100%; background-repeat:no-repeat;
     image-rendering:pixelated; filter:drop-shadow(0 3px 2px rgba(0,0,0,.25)); }
   .heart { position:absolute; font-size:18px; pointer-events:none;
     animation:floatUp .9s ease-out forwards; }
   @keyframes floatUp { from{opacity:1;transform:translateY(0);} to{opacity:0;transform:translateY(-40px);} }
+  .bubble { position:absolute; padding:2px 7px; border-radius:9px; white-space:nowrap;
+    font-family:var(--vscode-font-family); font-size:11px; pointer-events:none;
+    background:var(--vscode-editorHoverWidget-background, #252526);
+    color:var(--vscode-editorHoverWidget-foreground, #dddddd);
+    border:1px solid var(--vscode-editorHoverWidget-border, #454545);
+    animation:bubblePop 1.6s ease-out forwards; }
+  @keyframes bubblePop {
+    0%{opacity:0;transform:translateX(-50%) translateY(6px) scale(.8);}
+    15%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+    80%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+    100%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(1);} }
   body.paused #sprite { animation-play-state:paused; }
   @media (prefers-reduced-motion: reduce) { #sprite { animation:none !important; } }
   ${classes}
@@ -113,7 +143,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
 <div id="stage">
-  <div id="pet"><div id="sprite" class="s-walk"></div></div>
+  <div id="pet" title="${esc(name)}"><div id="breath"><div id="sprite" class="s-walk"></div></div></div>
   <div id="floor"></div>
 </div>
 <script nonce="${nonce}">
@@ -122,15 +152,25 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   const COFFEE_AFTER = ${coffeeAfter};   // inactivity ticks -> coffee break
   const SLEEP_AFTER = ${sleepAfter};   // inactivity ticks -> falls asleep
   const PET = ${DISP};
+  const BUBBLES = ${bubbles};
+  const PETS = ['hi!', 'hee!', '♥'];
 
+  const vscodeApi = acquireVsCodeApi();
   const pet = document.getElementById('pet');
+  const breath = document.getElementById('breath');
   const sprite = document.getElementById('sprite');
   const stage = document.getElementById('stage');
   const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   let x = 20, dir = 1;
-  let inactivity = 0, runFor = 0, celebrateFor = 0, scaredFor = 0, jumpFor = 0;
+  let inactivity = 0, runFor = 0, celebrateFor = 0, scaredFor = 0, jumpFor = 0, typeRate = 0;
   let lastState = '';
+
+  // Idle micro-behaviour (no new sprites): while strolling it occasionally stops
+  // for a moment, sometimes looking the other way; it "breathes" while standing.
+  let pauseFor = 0, look = 0, walkTimer = randWalk();
+  function randWalk() { return 180 + Math.floor(Math.random() * 260); } // ticks between pauses
+  function randPause() { return 24 + Math.floor(Math.random() * 46); }  // ticks standing still
 
   function state() {
     if (celebrateFor > 0) return 'celebrate';
@@ -146,10 +186,30 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     inactivity++;
     if (runFor>0) runFor--; if (celebrateFor>0) celebrateFor--;
     if (scaredFor>0) scaredFor--; if (jumpFor>0) jumpFor--;
+    if (typeRate > 0) { typeRate = Math.max(0, typeRate - 0.12); }
+    const intensity = Math.min(1, typeRate / 8);
     const s = state();
-    if (s !== lastState) { sprite.className = 's-' + s; lastState = s; }
+    if (s !== lastState) {
+      sprite.className = 's-' + s;
+      lastState = s;
+      vscodeApi.postMessage({ type: 'state', s: s });
+      if (s === 'sleep') bubble('zzz');
+      else if (s === 'coffee') bubble('☕');
+    }
 
-    const mv = REDUCED ? 0 : (MOVE[s] || 0);
+    // While strolling, take the occasional break (and maybe glance around).
+    let standing = false;
+    if (s === 'walk' && !REDUCED) {
+      if (pauseFor > 0) { pauseFor--; standing = true; }
+      else if (--walkTimer <= 0) {
+        pauseFor = randPause(); walkTimer = randWalk(); standing = true;
+        look = Math.random() < 0.6 ? pauseFor : 0;
+      }
+    } else { pauseFor = 0; look = 0; }
+    if (look > 0) { look--; }
+
+    let mv = (REDUCED || standing) ? 0 : (MOVE[s] || 0);
+    if (s === 'run' && mv > 0) { mv *= (1 + intensity); } // faster the faster you type
     if (mv > 0) {
       const max = Math.max(0, stage.clientWidth - PET);
       x += dir * mv;
@@ -157,7 +217,12 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
       if (x <= 0)   { x = 0;   dir = 1; }
     }
     pet.style.left = x + 'px';
-    pet.style.transform = dir > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+    const face = (dir > 0 ? 1 : -1) * (look > 0 ? -1 : 1);
+    pet.style.transform = face > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+
+    // Breathe while calm and standing (paused stroll or coffee break).
+    const calm = (s === 'walk' && standing) || s === 'coffee';
+    breath.classList.toggle('breathing', calm && !REDUCED);
   }
 
   let timer = null;
@@ -175,7 +240,27 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     stage.appendChild(h);
     setTimeout(() => h.remove(), 900);
   }
-  pet.addEventListener('click', () => { inactivity = 0; jumpFor = 9; heart(); });
+
+  // Small speech bubble above the pet (one at a time).
+  let curBubble = null;
+  function bubble(text) {
+    if (!BUBBLES) { return; }
+    if (curBubble) { curBubble.remove(); }
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.textContent = text;
+    b.style.left = (x + PET / 2) + 'px';
+    b.style.bottom = (8 + PET) + 'px';
+    stage.appendChild(b);
+    curBubble = b;
+    setTimeout(() => { if (b === curBubble) { curBubble = null; } b.remove(); }, 1600);
+  }
+
+  // Click anywhere in the panel to pet the capybara.
+  stage.addEventListener('click', () => {
+    inactivity = 0; jumpFor = 9; heart();
+    bubble(PETS[Math.floor(Math.random() * PETS.length)]);
+  });
 
   window.addEventListener('message', (e) => {
     const m = e.data || {};
@@ -183,11 +268,14 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     if (m.type === 'pause') { stop(); document.body.classList.add('paused'); return; }
     if (m.type === 'resume') { start(); document.body.classList.remove('paused'); return; }
     inactivity = 0;
-    if (m.type === 'typing') runFor = 38;
-    else if (m.type === 'celebrate') celebrateFor = 26;
-    else if (m.type === 'scared') scaredFor = 24;
+    if (m.type === 'typing') { runFor = 38; typeRate = Math.min(10, typeRate + 1.5); }
+    else if (m.type === 'celebrate') { celebrateFor = 26; bubble('yay!'); }
+    else if (m.type === 'scared') { scaredFor = 24; bubble('uh-oh'); }
     else if (m.type === 'jump') jumpFor = 9;
-    else if (m.type === 'pet') { jumpFor = 9; heart(); }
+    else if (m.type === 'pet') {
+      jumpFor = 9; heart();
+      bubble(PETS[Math.floor(Math.random() * PETS.length)]);
+    }
   });
 </script>
 </body>
@@ -195,8 +283,33 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
+const MOOD: { [s: string]: string } = {
+  walk: '🚶', run: '🏃', jump: '🦘', celebrate: '🎉', scared: '😱', coffee: '☕', sleep: '😴',
+};
+
 export function activate(context: vscode.ExtensionContext) {
   const provider = new CapibaraViewProvider(context.extensionUri);
+
+  // Status bar item that mirrors the pet's current mood (click to focus the view).
+  const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  statusBar.command = 'capibaraPet.show';
+  context.subscriptions.push(statusBar);
+
+  let lastMood = 'walk';
+  const updateStatusBar = (s: string) => {
+    lastMood = s;
+    const c = vscode.workspace.getConfiguration('capibaraPet');
+    if (!c.get<boolean>('enabled', true) || !c.get<boolean>('statusBar', true)) {
+      statusBar.hide();
+      return;
+    }
+    const name = (c.get<string>('name', '') || '').trim();
+    statusBar.text = `🦫 ${MOOD[s] || '🚶'}`;
+    statusBar.tooltip = `${name || 'Capibara Pet'} — ${s}`;
+    statusBar.show();
+  };
+  provider.onState = updateStatusBar;
+  updateStatusBar(lastMood);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -206,7 +319,11 @@ export function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand('capibaraPet.show', () =>
       vscode.commands.executeCommand('capibaraPet.view.focus')),
-    vscode.commands.registerCommand('capibaraPet.pet', () => provider.notify('pet'))
+    vscode.commands.registerCommand('capibaraPet.pet', async () => {
+      // Make sure the view is visible so the pet always reacts.
+      await vscode.commands.executeCommand('capibaraPet.view.focus');
+      provider.notify('pet');
+    })
   );
 
   let lastLine = -1;
@@ -231,7 +348,12 @@ export function activate(context: vscode.ExtensionContext) {
       hadErrors = hasErrors;
     }),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('capibaraPet')) { provider.refresh(); }
+      if (e.affectsConfiguration('capibaraPet')) { provider.refresh(); updateStatusBar(lastMood); }
+    }),
+    vscode.debug.onDidStartDebugSession(() => {
+      if (vscode.workspace.getConfiguration('capibaraPet').get<boolean>('reactToDebug', true)) {
+        provider.notify('celebrate');
+      }
     })
   );
 }

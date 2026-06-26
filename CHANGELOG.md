@@ -12,9 +12,6 @@ All notable changes to the **Capibara Pet** extension are documented here.
 - **Localized UI (English / Spanish)**: command titles and setting descriptions now
   follow your VS Code display language.
 
-### Internal
-- Added a **GitHub Actions CI** workflow (compile + package sanity check on push/PR).
-
 ## [0.6.0]
 
 ### Added

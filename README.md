@@ -9,6 +9,10 @@ A little capybara pet that lives in a panel inside your VS Code editor. It strol
 
 Animated with spritesheets and CSS — flicker-free and never in the way of your code.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/demo.gif" alt="Capibara Pet in action" width="640">
+</p>
+
 ## States
 
 The capybara reacts to what you do:

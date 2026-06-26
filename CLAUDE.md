@@ -1,109 +1,110 @@
 # CLAUDE.md — Capibara Pet
 
-Contexto del proyecto para asistentes de IA (Claude Code). Léelo antes de trabajar.
+Project context for AI assistants (Claude Code). Read it before working.
 
-## Qué es
+## What it is
 
-Extensión de VS Code: una capibara mascota animada que vive en un **panel webview**
-acoplado. Reacciona a lo que hace el usuario en el editor (escribir, guardar, errores,
-pausas). Animada con **spritesheets + CSS `steps()`** (sin parpadeo) y sin interferir
-con el código.
+A VS Code extension: an animated capybara mascot that lives in a docked **webview
+panel**. It reacts to what the user does in the editor (typing, saving, errors,
+pauses). Animated with **spritesheets + CSS `steps()`** (flicker-free) and without
+getting in the way of the code.
 
-- Nombre / id: `capibara-pet` · displayName: "Capibara Pet"
-- Versión actual: `0.2.0`
-- Autor: Juan Carlos Condori
-- Licencia: MIT
+- Name / id: `capibara-pet` · displayName: "Capibara Pet"
+- Current version: `0.2.0`
+- Author: Juan Carlos Condori
+- License: MIT
 
-## Meta (objetivo final)
+## Goal (end objective)
 
-**Publicar la extensión en el Visual Studio Code Marketplace.** El código y el
-empaquetado ya están listos; falta la parte de cuenta/credenciales del usuario.
+**Publish the extension to the Visual Studio Code Marketplace.** The code and the
+packaging are ready; what's missing is the user's account/credentials part.
 
-Pasos pendientes para publicar:
+Pending steps to publish:
 
-1. Crear el publisher en https://marketplace.visualstudio.com/manage
-2. Reemplazar `"publisher": "your-publisher-id"` en `package.json` por el ID real.
-3. Generar un PAT en Azure DevOps (scope: Marketplace → Manage).
-4. `npx @vscode/vsce login <publisher-id>` (pegar el PAT).
+1. Create the publisher at https://marketplace.visualstudio.com/manage
+2. Replace `"publisher": "your-publisher-id"` in `package.json` with the real ID.
+3. Generate a PAT in Azure DevOps (scope: Marketplace → Manage).
+4. `npx @vscode/vsce login <publisher-id>` (paste the PAT).
 5. `npx @vscode/vsce publish`
 
-Nota: Microsoft retira los PAT globales el 1-dic-2026; para CI conviene migrar a
-Microsoft Entra ID. Para publicación manual el PAT sigue sirviendo.
+Note: Microsoft is retiring global PATs on 2026-12-01; for CI it's best to migrate to
+Microsoft Entra ID. For manual publishing the PAT still works.
 
-## Arquitectura
+## Architecture
 
-- `src/extension.ts` — TODO el código. Un `WebviewViewProvider` (`CapibaraViewProvider`)
-  registra la vista `capibaraPet.view`. Genera el HTML/CSS/JS del webview inline.
-  La máquina de estados de animación corre en el JS del webview; el lado de la
-  extensión solo escucha eventos del editor y manda mensajes (`postMessage`).
-- `out/extension.js` — salida compilada (TypeScript → CommonJS). Es lo que carga VS Code.
-- `media/*_sheet.png` — spritesheets por estado (celdas de 128px, fondo transparente,
-  alineados a la base). El JS los anima moviendo `background-position` con `steps(n)`.
-- `media/icon.png` — ícono del Marketplace (256×256).
-- `media/pet-icon.svg` — ícono del contenedor de vista en la barra de actividad.
+- `src/extension.ts` — ALL the code. A `WebviewViewProvider` (`CapibaraViewProvider`)
+  registers the `capibaraPet.view` view (as a section inside the Explorer). It builds
+  the webview's HTML/CSS/JS inline.
+  The animation state machine runs in the webview's JS; the extension side only
+  listens to editor events and sends messages (`postMessage`).
+- `out/extension.js` — compiled output (TypeScript → CommonJS). This is what VS Code loads.
+- `media/*_sheet.png` — per-state spritesheets (128px cells, transparent background,
+  baseline-aligned). The JS animates them by moving `background-position` with `steps(n)`.
+- `media/icon.png` — Marketplace icon (256×256).
+- `media/pet-icon.svg` — view icon (used if the user drags it out of the Explorer).
 
-## Estados y disparadores
+## States and triggers
 
-| Estado     | Sheet                | Frames | Se activa cuando…                         |
+| State      | Sheet                | Frames | Triggered when…                           |
 |------------|----------------------|:------:|-------------------------------------------|
-| walk       | `walk_sheet.png`     | 4      | por defecto (pasea, se mueve en X)        |
-| run        | `run_sheet.png`      | 7      | al escribir (`onDidChangeTextDocument`)   |
-| jump       | `jump_sheet.png`     | 2      | al cambiar de línea (selección)           |
-| celebrate  | `celebrate_sheet.png`| 4      | al guardar (`onDidSaveTextDocument`)      |
-| scared     | `scared_sheet.png`   | 2      | hay errores (`onDidChangeDiagnostics`)    |
-| coffee     | `coffee_sheet.png`   | 2      | pausa media (~6 s sin actividad)          |
-| sleep      | `sleep_sheet.png`    | 2      | pausa larga (~15 s); el sprite trae 💤    |
+| walk       | `walk_sheet.png`     | 4      | default (strolls, moves along X)          |
+| run        | `run_sheet.png`      | 7      | typing (`onDidChangeTextDocument`)        |
+| jump       | `jump_sheet.png`     | 2      | changing line (selection)                 |
+| celebrate  | `celebrate_sheet.png`| 4      | saving (`onDidSaveTextDocument`)          |
+| scared     | `scared_sheet.png`   | 2      | there are errors (`onDidChangeDiagnostics`)|
+| coffee     | `coffee_sheet.png`   | 2      | medium pause (~6 s of inactivity)         |
+| sleep      | `sleep_sheet.png`    | 2      | long pause (~15 s); the sprite carries 💤 |
 
-Prioridad de estados (en el JS `state()`): celebrate > scared > jump > run > sleep >
-coffee > walk. La config de frames/velocidad está en el objeto `SHEETS` en
-`src/extension.ts`. Solo `walk` y `run` se desplazan (objeto `MOVE`).
+State priority (in the JS `state()`): celebrate > scared > jump > run > sleep >
+coffee > walk. The frame/speed config lives in the `SHEETS` object in
+`src/extension.ts`. Only `walk` and `run` move (the `MOVE` object).
 
-## Comandos
+## Commands
 
 ```bash
-npm run compile                       # compilar TS -> out/
-npm run watch                         # compilar en modo watch
-npx @vscode/vsce package --allow-missing-repository   # genera el .vsix
+npm run compile                       # compile TS -> out/
+npm run watch                         # compile in watch mode
+npx @vscode/vsce package --allow-missing-repository   # generates the .vsix
 ```
 
-Para probar sin publicar: en VS Code → "Extensions: Install from VSIX…" y elegir
-`capibara-pet-0.2.0.vsix`. O abrir el proyecto y pulsar **F5** (Extension Host).
+To test without publishing: in VS Code → "Extensions: Install from VSIX…" and pick
+`capibara-pet-0.2.0.vsix`. Or open the project and press **F5** (Extension Host).
 
-## Cómo se generan los sprites (importante)
+## How the sprites are generated (important)
 
-Los sprites se crean con un generador de imágenes (Nano Banana / Gemini) y se
-procesan con Python + Pillow. La fuente es una **hoja maestra** `master.png` (todos
-los estados en una sola imagen, fondo verde `#00B140`) — está en la carpeta del
-usuario `Downloads/tiras/`, NO en el repo.
+The sprites are created with an image generator (Nano Banana / Gemini) and processed
+with Python + Pillow. The source is a **master sheet** `master.png` (all states in a
+single image, green background `#00B140`) — it lives in the user's `Downloads/tiras/`
+folder, NOT in the repo.
 
-Pipeline de procesamiento (cuando llega un nuevo `master.png`):
-1. Chroma-key: quitar el verde a transparencia (`greenness = g - max(r,b)`).
-2. Segmentar por bandas: filas por proyección horizontal, frames por proyección vertical.
-3. Frames pegados: dividir cada celda en N partes (N = round(ancho/172)) y **ajustar
-   cada corte al valle** del perfil de columnas (para no cortar cuerpos).
-4. Normalizar: escala global única, centrar y alinear a la base en celdas de 128px.
-5. Exportar `media/<estado>_sheet.png`.
+Processing pipeline (when a new `master.png` arrives):
+1. Chroma-key: remove the green to transparency (`greenness = g - max(r,b)`).
+2. Segment into bands: rows by horizontal projection, frames by vertical projection.
+3. Glued frames: split each cell into N parts (N = round(width/172)) and **snap each
+   cut to the valley** of the column profile (so bodies aren't cut).
+4. Normalize: single global scale, center and baseline-align in 128px cells.
+5. Export `media/<state>_sheet.png`.
 
-Layout actual de `master.png` (1408×768): fila0=walk(4), fila1=run(7, pegados 2-3-2),
-fila2=sleep(2)+celebrate(4), fila3=coffee(2)+scared(2)+jump(2).
+Current `master.png` layout (1408×768): row0=walk(4), row1=run(7, glued 2-3-2),
+row2=sleep(2)+celebrate(4), row3=coffee(2)+scared(2)+jump(2).
 
-Si se agregan/cambian estados: actualizar el pipeline, regenerar los sheets y
-actualizar el objeto `SHEETS` (frame count) en `src/extension.ts`.
+If states are added/changed: update the pipeline, regenerate the sheets and update
+the `SHEETS` object (frame count) in `src/extension.ts`.
 
-## Convenciones / notas
+## Conventions / notes
 
-- Engine mínimo: `vscode ^1.74.0`.
-- Sin dependencias de runtime; solo devDeps (typescript, @types).
-- CSP del webview con `nonce`; recursos solo desde `media/` (`localResourceRoots`).
-- Limitación conocida: VS Code NO permite overlays flotantes fijos sobre el editor;
-  por eso la mascota vive en un panel webview (se puede arrastrar a la barra lateral
-  derecha para dejarla en una esquina). No reintentar el enfoque de "decoración".
-- `.vscodeignore` empaqueta solo lo necesario (sheets + icon + out). No incluye `src/`
-  ni los `sprite-*.md`.
+- Minimum engine: `vscode ^1.74.0`.
+- No runtime dependencies; only devDeps (typescript, @types).
+- Webview CSP with `nonce`; resources only from `media/` (`localResourceRoots`).
+- Known limitation: VS Code does NOT allow fixed floating overlays on top of the
+  editor; that's why the mascot lives in a webview panel (it can be dragged to the
+  secondary side bar to keep it in a corner). Do not retry the "decoration" approach.
+- `.vscodeignore` packages only what's needed (sheets + icon + out). It excludes `src/`
+  and the `sprite-*.md` files.
 
-## Pendientes / ideas futuras
+## TODO / future ideas
 
-- [ ] Publicar al Marketplace (ver Meta).
-- [ ] (Opcional) Inicializar git + agregar `"repository"` en package.json para que el
-      README y sus enlaces se vean completos en la página del Marketplace.
-- [ ] (Opcional) Comando para mostrar/ocultar o ajustar tamaño/velocidad desde settings.
+- [ ] Publish to the Marketplace (see Goal).
+- [ ] (Optional) Initialize git + add `"repository"` to package.json so the README and
+      its links render fully on the Marketplace page.
+- [ ] (Optional) Command to show/hide or adjust size/speed from settings.

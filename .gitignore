@@ -1,13 +1,13 @@
-# Dependencias
+# Dependencies
 node_modules/
 
-# Salida compilada (se regenera con: npm run compile)
+# Compiled output (regenerated with: npm run compile)
 out/
 
-# Paquete de la extensión (se regenera con: vsce package)
+# Extension package (regenerated with: vsce package)
 *.vsix
 
-# Pruebas / sistema
+# Tests / system
 .vscode-test/
 .DS_Store
 Thumbs.db

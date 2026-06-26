@@ -1,7 +1,7 @@
 {
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
-  "description": "Una capibara mascota que vive en un panel de tu editor: camina, corre cuando escribes, se asusta con los errores, toma cafe y duerme.",
+  "description": "A capybara pet that lives in a panel of your editor: it walks, runs while you type, gets scared by errors, sips coffee, and sleeps.",
   "version": "0.2.0",
   "publisher": "your-publisher-id",
   "license": "MIT",
@@ -19,21 +19,14 @@
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "capibaraPetContainer",
-          "title": "Capibara Pet",
-          "icon": "media/pet-icon.svg"
-        }
-      ]
-    },
     "views": {
-      "capibaraPetContainer": [
+      "explorer": [
         {
           "type": "webview",
           "id": "capibaraPet.view",
-          "name": "Capibara"
+          "name": "Capibara",
+          "icon": "media/pet-icon.svg",
+          "visibility": "visible"
         }
       ]
     }

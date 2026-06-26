@@ -1,39 +1,46 @@
 # 🐾 Capibara Pet
 
-Una capibara mascota que vive en un panel de tu editor de VS Code. Camina tranquila, corre cuando escribes, se asusta cuando hay errores, toma su cafecito en las pausas y se duerme si la dejas sola un rato.
+A little capybara pet that lives in a panel inside your VS Code editor. It strolls around calmly, runs while you type, gets scared when there are errors, sips its coffee during short breaks, and falls asleep if you leave it alone for a while.
 
-Animada con spritesheets y CSS, sin parpadeo y sin estorbar tu código.
+Animated with spritesheets and CSS — flicker-free and never in the way of your code.
 
-## Estados
+## States
 
-La capibara reacciona a lo que haces:
+The capybara reacts to what you do:
 
-- **Camina** — su estado por defecto, paseando por el panel.
-- **Corre** — mientras escribes.
-- **Salta** — al cambiar de línea.
-- **Festeja** — cuando guardas el archivo.
-- **Se asusta** — cuando el archivo tiene errores.
-- **Toma café** — tras una pausa mediana.
-- **Duerme** — tras una pausa larga (con su 💤).
+| State | When it happens |
+|-------|-----------------|
+| 🚶 **Walk** | Default — strolling around the panel |
+| 🏃 **Run** | While you type |
+| 🦘 **Jump** | When you move to another line |
+| 🎉 **Celebrate** | When you save a file |
+| 😱 **Scared** | When the file has errors |
+| ☕ **Coffee** | After a medium pause (~6 s) |
+| 😴 **Sleep** | After a long pause (~15 s) — with its 💤 |
 
-## Uso
+## Getting started
 
-1. Instala la extensión.
-2. Haz clic en el ícono de la capibara en la barra de actividad para abrir su panel.
-3. (Opcional) Para fijarla en una esquina, activa la **barra lateral secundaria** (`Ctrl+Alt+B`) y arrastra el panel de la capibara hacia ahí. VS Code recordará la posición.
+1. Install the extension.
+2. Open the **Explorer** (`Ctrl+Shift+E` / `Cmd+Shift+E`). At the bottom you'll find a **"Capibara"** section — expand it and the pet appears in its little box.
+3. Want it somewhere else? Just **drag the "Capibara" section** to another spot — for example into the **Secondary Side Bar** (`Ctrl+Alt+B`) to keep it pinned in a corner. VS Code remembers the position.
 
-## Instalación desde el Marketplace
+## Install from the Marketplace
 
-Busca **"Capibara Pet"** en la pestaña de Extensiones de VS Code, o instálala desde la línea de comandos:
+Search for **"Capibara Pet"** in the Extensions tab of VS Code, or install it from the command line:
 
 ```
-code --install-extension TU_PUBLISHER_ID.capibara-pet
+code --install-extension YOUR_PUBLISHER_ID.capibara-pet
 ```
 
-## Créditos
+## Notes
 
-Hecho con cariño por Juan Carlos Condori. Sprites de capibara en estilo pixel-art.
+- No runtime dependencies and no configuration needed — it just works.
+- The pet lives in a webview panel (VS Code does not allow floating overlays on top of the editor), with a transparent background so it blends with your theme.
 
-## Licencia
+## Credits
 
-MIT. Ver el archivo LICENSE incluido en el paquete.
+Made with care by Juan Carlos Condori. Pixel-art capybara sprites.
+
+## License
+
+MIT. See the LICENSE file included in the package.

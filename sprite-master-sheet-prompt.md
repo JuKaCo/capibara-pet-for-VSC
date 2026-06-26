@@ -1,20 +1,20 @@
-# Prompt — HOJA MAESTRA (todos los estados en UNA imagen)
+# Prompt — MASTER SHEET (all states in ONE image)
 
-## Por qué una sola imagen
-Un único render = la MISMA capibara en TODOS los estados (mismo color, tamaño,
-detalles). Es la consistencia máxima. Solo cambian pose/patas.
+## Why a single image
+A single render = the SAME capybara across ALL states (same color, size, details).
+It's maximum consistency. Only the pose/legs change.
 
-## Reglas de oro
-1. UNA sola imagen. Organizada en **filas**: cada fila = un estado, frames de izquierda a derecha.
-2. La MISMA capibara en TODA la hoja: mismo color, mismo tamaño, mismas proporciones, mismo grosor de contorno. SOLO cambian pose/patas/accesorios.
-3. Estilo pixel-art 16-bit, contorno oscuro limpio, sin anti-aliasing.
-4. De perfil mirando a la DERECHA (salvo dormir = acostada, cafecito = sentada).
-5. Misma línea de piso en cada fila; mismo tamaño de frame en TODA la hoja.
-6. **Fondo verde sólido #00B140.** Sin sombras.
-7. **SEPARACIÓN amplia** entre frames y entre filas (espacio verde entre cada uno).
-8. **SIN texto, SIN números, SIN etiquetas, SIN bordes ni líneas de rejilla.**
+## Golden rules
+1. ONE single image. Organized in **rows**: each row = one state, frames left to right.
+2. The SAME capybara across the WHOLE sheet: same color, same size, same proportions, same outline thickness. ONLY pose/legs/accessories change.
+3. 16-bit pixel-art style, clean dark outline, no anti-aliasing.
+4. Side profile facing RIGHT (except sleep = lying down, coffee = sitting).
+5. Same baseline in each row; same frame size across the WHOLE sheet.
+6. **Flat solid #00B140 green background.** No shadows.
+7. **Generous SPACING** between frames and between rows (green space around each one).
+8. **NO text, NO numbers, NO labels, NO borders or grid lines.**
 
-## PROMPT (cópialo tal cual)
+## PROMPT (copy it as-is)
 > A single large pixel-art sprite sheet of ONE cute chibi capybara, organized in rows, one animation per row, frames left to right. The SAME capybara in EVERY frame across the whole sheet: identical warm brown color, identical size, proportions and outline thickness — only the pose/legs/accessories change. 16-bit pixel art, crisp pixels, no anti-aliasing, thick clean dark outline. Side profile facing RIGHT. Generous green spacing between every frame and every row. Flat solid #00B140 green background, no shadows, NO text, NO numbers, NO labels, NO grid lines, NO borders.
 >
 > Rows, in this order:
@@ -28,13 +28,13 @@ detalles). Es la consistencia máxima. Solo cambian pose/patas.
 >
 > Keep every capybara the same scale across all rows. Feet aligned per row.
 
-## Consejos
-- Usa tu `base.png` como imagen de referencia para fijar el aspecto.
-- Si mete texto/números: re-genera con `absolutely no text, no numbers, no labels anywhere`.
-- Mantén MUCHO espacio verde entre sprites: facilita que yo los recorte sin que se peguen.
+## Tips
+- Use your `base.png` as a reference image to lock the look.
+- If it adds text/numbers: re-generate with `absolutely no text, no numbers, no labels anywhere`.
+- Keep LOTS of green space between sprites: it makes it easier for me to crop them without them sticking together.
 
-## Qué hago cuando me la pases
-1. Quito el fondo verde a transparencia.
-2. Detecto cada capibara como un "blob" separado, los agrupo por filas (estados) en el orden de arriba.
-3. Los re-alineo a spritesheets exactos por estado (walk/run/sleep/celebrate/coffee/scared).
-4. Conecto cada estado a un comportamiento en la extensión.
+## What I do when you hand it over
+1. I remove the green background to transparency.
+2. I detect each capybara as a separate "blob" and group them by rows (states) in the order above.
+3. I re-align them into exact per-state spritesheets (walk/run/sleep/celebrate/coffee/scared).
+4. I wire each state to a behavior in the extension.

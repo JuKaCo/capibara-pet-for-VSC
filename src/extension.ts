@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
 
-// Capibara Pet — mascota en un panel acoplado (webview).
-// Animacion por spritesheet con CSS steps() (sin parpadeo). Arrastra el panel a
-// la barra lateral derecha para fijarlo en una esquina.
-// Estados:
-//   walk      pasea (por defecto)
-//   run       corre mientras escribes
-//   jump      brinca al cambiar de linea
-//   celebrate festeja al guardar
-//   scared    se asusta si el archivo tiene errores
-//   coffee    toma cafe en pausas medianas
-//   sleep     duerme tras una pausa larga (el sprite ya trae 💤)
+// Capibara Pet — a mascot living in a docked panel (webview).
+// Spritesheet animation with CSS steps() (flicker-free). Drag the panel to the
+// secondary side bar to pin it in a corner.
+// States:
+//   walk      strolls around (default)
+//   run       runs while you type
+//   jump      hops when you change line
+//   celebrate cheers when you save
+//   scared    gets scared if the file has errors
+//   coffee    sips coffee during medium pauses
+//   sleep     sleeps after a long pause (the sprite already carries 💤)
 
 interface SheetCfg { n: number; dur: number; }
 const SHEETS: { [s: string]: SheetCfg } = {
@@ -72,7 +72,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
       ]).join('');
 
     return `<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy"
@@ -80,7 +80,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 <style nonce="${nonce}">
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { width:100%; height:100%; background:transparent; overflow:hidden; }
-  #stage { position:relative; width:100%; height:100%; min-height:120px; }
+  #stage { position:relative; width:100%; height:100%; min-height:96px; }
   #floor { position:absolute; left:0; right:0; bottom:0; height:2px;
     background:var(--vscode-editorIndentGuide-background, #ffffff22); }
   #pet { position:absolute; bottom:4px; left:20px; width:${DISP}px; height:${DISP}px;
@@ -99,8 +99,8 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 <script nonce="${nonce}">
   const MOVE = ${move};
   const TICK = 70;
-  const COFFEE_AFTER = 90;   // ~6 s -> toma cafe
-  const SLEEP_AFTER = 210;   // ~15 s -> duerme
+  const COFFEE_AFTER = 90;   // ~6 s -> coffee break
+  const SLEEP_AFTER = 210;   // ~15 s -> falls asleep
   const PET = ${DISP};
 
   const pet = document.getElementById('pet');

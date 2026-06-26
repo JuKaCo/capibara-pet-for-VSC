@@ -11,6 +11,8 @@ import * as vscode from 'vscode';
 //   scared    gets scared if the file has errors
 //   coffee    sips coffee during medium pauses
 //   sleep     sleeps after a long pause (the sprite already carries 💤)
+// Click the capybara -> it hops and a heart floats up. The animation pauses when
+// the view is hidden, and it respects the user's prefers-reduced-motion setting.
 
 interface SheetCfg { n: number; dur: number; }
 const SHEETS: { [s: string]: SheetCfg } = {
@@ -36,6 +38,8 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'media')],
     };
     view.webview.html = this.html(view.webview);
+    // Pause the animation loop while the view is not visible (saves CPU/battery).
+    view.onDidChangeVisibility(() => this.notify(view.visible ? 'resume' : 'pause'));
   }
 
   notify(type: string) {
@@ -84,9 +88,14 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   #floor { position:absolute; left:0; right:0; bottom:0; height:2px;
     background:var(--vscode-editorIndentGuide-background, #ffffff22); }
   #pet { position:absolute; bottom:4px; left:20px; width:${DISP}px; height:${DISP}px;
-    transition:transform .08s linear; }
+    transition:transform .08s linear; cursor:pointer; }
   #sprite { width:100%; height:100%; background-repeat:no-repeat;
     image-rendering:pixelated; filter:drop-shadow(0 3px 2px rgba(0,0,0,.25)); }
+  .heart { position:absolute; font-size:18px; pointer-events:none;
+    animation:floatUp .9s ease-out forwards; }
+  @keyframes floatUp { from{opacity:1;transform:translateY(0);} to{opacity:0;transform:translateY(-40px);} }
+  body.paused #sprite { animation-play-state:paused; }
+  @media (prefers-reduced-motion: reduce) { #sprite { animation:none !important; } }
   ${classes}
   ${keyframes}
 </style>
@@ -106,6 +115,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   const pet = document.getElementById('pet');
   const sprite = document.getElementById('sprite');
   const stage = document.getElementById('stage');
+  const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   let x = 20, dir = 1;
   let inactivity = 0, runFor = 0, celebrateFor = 0, scaredFor = 0, jumpFor = 0;
@@ -128,7 +138,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const s = state();
     if (s !== lastState) { sprite.className = 's-' + s; lastState = s; }
 
-    const mv = MOVE[s] || 0;
+    const mv = REDUCED ? 0 : (MOVE[s] || 0);
     if (mv > 0) {
       const max = Math.max(0, stage.clientWidth - PET);
       x += dir * mv;
@@ -138,10 +148,29 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     pet.style.left = x + 'px';
     pet.style.transform = dir > 0 ? 'scaleX(1)' : 'scaleX(-1)';
   }
-  setInterval(tick, TICK);
+
+  let timer = null;
+  function start() { if (!timer) { timer = setInterval(tick, TICK); } }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  start();
+
+  // Click the pet: a little hop and a heart floating up.
+  function heart() {
+    const h = document.createElement('div');
+    h.className = 'heart';
+    h.textContent = '❤️';
+    h.style.left = (x + PET / 2 - 9) + 'px';
+    h.style.bottom = (4 + PET) + 'px';
+    stage.appendChild(h);
+    setTimeout(() => h.remove(), 900);
+  }
+  pet.addEventListener('click', () => { inactivity = 0; jumpFor = 9; heart(); });
 
   window.addEventListener('message', (e) => {
     const m = e.data || {};
+    // Pause/resume the loop when the view is hidden/shown (saves CPU).
+    if (m.type === 'pause') { stop(); document.body.classList.add('paused'); return; }
+    if (m.type === 'resume') { start(); document.body.classList.remove('paused'); return; }
     inactivity = 0;
     if (m.type === 'typing') runFor = 38;
     else if (m.type === 'celebrate') celebrateFor = 26;
@@ -166,6 +195,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   let lastLine = -1;
+  let hadErrors = false;
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument(() => provider.notify('typing')),
     vscode.workspace.onDidSaveTextDocument(() => provider.notify('celebrate')),
@@ -177,10 +207,12 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.languages.onDidChangeDiagnostics(() => {
       const ed = vscode.window.activeTextEditor;
       if (!ed) { return; }
-      const errs = vscode.languages
+      const hasErrors = vscode.languages
         .getDiagnostics(ed.document.uri)
-        .filter((d) => d.severity === vscode.DiagnosticSeverity.Error);
-      if (errs.length > 0) { provider.notify('scared'); }
+        .some((d) => d.severity === vscode.DiagnosticSeverity.Error);
+      // Only react when we just *entered* an error state (avoids constant spam).
+      if (hasErrors && !hadErrors) { provider.notify('scared'); }
+      hadErrors = hasErrors;
     })
   );
 }

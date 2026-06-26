@@ -63,7 +63,7 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 Search for **"Capibara Pet"** in the Extensions tab of VS Code, or install it from the command line:
 
 ```
-code --install-extension YOUR_PUBLISHER_ID.capibara-pet
+code --install-extension JuanCarlosCondori.capibara-pet
 ```
 
 ## Notes

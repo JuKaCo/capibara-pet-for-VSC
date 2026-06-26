@@ -4,6 +4,7 @@
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/JuanCarlosCondori.capibara-pet?color=blue)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet)
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/JuanCarlosCondori.capibara-pet?color=gold)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet&ssr=false#review-details)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/JuKaCo/capibara-pet-for-VSC/actions/workflows/ci.yml/badge.svg)](https://github.com/JuKaCo/capibara-pet-for-VSC/actions/workflows/ci.yml)
 
 A little capybara pet that lives in a panel inside your VS Code editor. It strolls around calmly, runs while you type, gets scared when there are errors, sips its coffee during short breaks, and falls asleep if you leave it alone for a while.
 
@@ -41,6 +42,9 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Capibara Pet
 |---------|--------------|
 | **Capibara Pet: Show the Capybara** | Reveals and focuses the pet's view. |
 | **Capibara Pet: Pet the Capybara** | Give it some love — it hops with a ❤️. |
+| **Capibara Pet: Show/Hide the Capybara** | Quickly toggle the pet on or off. |
+
+> You can also **drag the capybara** left/right inside the panel with your mouse.
 
 ## Settings
 

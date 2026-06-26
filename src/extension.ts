@@ -115,7 +115,8 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   #floor { position:absolute; left:0; right:0; bottom:0; height:2px;
     background:var(--vscode-editorIndentGuide-background, #ffffff22); }
   #pet { position:absolute; bottom:4px; left:20px; width:${DISP}px; height:${DISP}px;
-    transition:transform .08s linear; cursor:pointer; }
+    transition:transform .08s linear; cursor:grab; }
+  body.dragging, body.dragging #pet { cursor:grabbing; }
   #breath { width:100%; height:100%; transform-origin:bottom center; }
   #breath.breathing { animation:breathe 3.2s ease-in-out infinite; }
   @keyframes breathe { 0%,100%{transform:scaleY(1);} 50%{transform:scaleY(1.035);} }
@@ -169,6 +170,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   // Idle micro-behaviour (no new sprites): while strolling it occasionally stops
   // for a moment, sometimes looking the other way; it "breathes" while standing.
   let pauseFor = 0, look = 0, walkTimer = randWalk();
+  let dragging = false, moved = false; // drag-to-move state
   function randWalk() { return 180 + Math.floor(Math.random() * 260); } // ticks between pauses
   function randPause() { return 24 + Math.floor(Math.random() * 46); }  // ticks standing still
 
@@ -208,7 +210,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     } else { pauseFor = 0; look = 0; }
     if (look > 0) { look--; }
 
-    let mv = (REDUCED || standing) ? 0 : (MOVE[s] || 0);
+    let mv = (REDUCED || standing || dragging) ? 0 : (MOVE[s] || 0);
     if (s === 'run' && mv > 0) { mv *= (1 + intensity); } // faster the faster you type
     if (mv > 0) {
       const max = Math.max(0, stage.clientWidth - PET);
@@ -256,10 +258,31 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     setTimeout(() => { if (b === curBubble) { curBubble = null; } b.remove(); }, 1600);
   }
 
-  // Click anywhere in the panel to pet the capybara.
+  // Click anywhere in the panel to pet the capybara (ignored right after a drag).
   stage.addEventListener('click', () => {
+    if (moved) { moved = false; return; }
     inactivity = 0; jumpFor = 9; heart();
     bubble(PETS[Math.floor(Math.random() * PETS.length)]);
+  });
+
+  // Drag the capybara horizontally with the mouse.
+  pet.addEventListener('mousedown', (e) => {
+    dragging = true; moved = false; inactivity = 0;
+    document.body.classList.add('dragging');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) { return; }
+    moved = true;
+    const r = stage.getBoundingClientRect();
+    const max = Math.max(0, stage.clientWidth - PET);
+    x = Math.min(max, Math.max(0, e.clientX - r.left - PET / 2));
+    pet.style.left = x + 'px';
+  });
+  window.addEventListener('mouseup', () => {
+    if (!dragging) { return; }
+    dragging = false;
+    document.body.classList.remove('dragging');
   });
 
   window.addEventListener('message', (e) => {
@@ -323,6 +346,10 @@ export function activate(context: vscode.ExtensionContext) {
       // Make sure the view is visible so the pet always reacts.
       await vscode.commands.executeCommand('capibaraPet.view.focus');
       provider.notify('pet');
+    }),
+    vscode.commands.registerCommand('capibaraPet.toggle', async () => {
+      const c = vscode.workspace.getConfiguration('capibaraPet');
+      await c.update('enabled', !c.get<boolean>('enabled', true), vscode.ConfigurationTarget.Global);
     })
   );
 

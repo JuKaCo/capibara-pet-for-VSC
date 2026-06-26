@@ -1,0 +1,18 @@
+{
+  "ext.description": "A capybara pet that lives in a panel of your editor: it walks, runs while you type, gets scared by errors, sips coffee, and sleeps.",
+  "cmd.category": "Capibara Pet",
+  "cmd.show.title": "Show the Capybara",
+  "cmd.pet.title": "Pet the Capybara",
+  "cmd.toggle.title": "Show/Hide the Capybara",
+  "config.title": "Capibara Pet",
+  "config.enabled.desc": "Show the capybara. Turn off to hide it without uninstalling.",
+  "config.size.desc": "Size of the capybara, in pixels.",
+  "config.speed.desc": "Movement speed multiplier for walking and running (`1` = default).",
+  "config.coffeeAfterSeconds.desc": "Seconds of inactivity before the capybara takes a coffee break.",
+  "config.sleepAfterSeconds.desc": "Seconds of inactivity before the capybara falls asleep.",
+  "config.reactToErrors.desc": "Whether the capybara gets scared when the active file has errors.",
+  "config.reactToDebug.desc": "Whether the capybara celebrates when a debug session starts.",
+  "config.name.desc": "Give your capybara a name. Shown as a tooltip on hover and in the status bar.",
+  "config.bubbles.desc": "Show small speech bubbles (e.g. when saving, sleeping, or petting).",
+  "config.statusBar.desc": "Show a status bar item that mirrors the capybara's current mood."
+}

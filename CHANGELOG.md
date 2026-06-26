@@ -2,6 +2,19 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.7.0]
+
+### Added
+- **Show/Hide command** (`capibaraPet.toggle`) to quickly turn the pet on or off.
+- **Drag to move**: grab the capybara with the mouse and slide it along the panel.
+
+### Changed
+- **Localized UI (English / Spanish)**: command titles and setting descriptions now
+  follow your VS Code display language.
+
+### Internal
+- Added a **GitHub Actions CI** workflow (compile + package sanity check on push/PR).
+
 ## [0.6.0]
 
 ### Added

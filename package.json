@@ -1,8 +1,8 @@
 {
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
-  "description": "A capybara pet that lives in a panel of your editor: it walks, runs while you type, gets scared by errors, sips coffee, and sleeps.",
-  "version": "0.6.0",
+  "description": "%ext.description%",
+  "version": "0.7.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
@@ -36,75 +36,80 @@
     "commands": [
       {
         "command": "capibaraPet.show",
-        "title": "Show the Capybara",
-        "category": "Capibara Pet"
+        "title": "%cmd.show.title%",
+        "category": "%cmd.category%"
       },
       {
         "command": "capibaraPet.pet",
-        "title": "Pet the Capybara",
-        "category": "Capibara Pet"
+        "title": "%cmd.pet.title%",
+        "category": "%cmd.category%"
+      },
+      {
+        "command": "capibaraPet.toggle",
+        "title": "%cmd.toggle.title%",
+        "category": "%cmd.category%"
       }
     ],
     "configuration": {
-      "title": "Capibara Pet",
+      "title": "%config.title%",
       "properties": {
         "capibaraPet.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Show the capybara. Turn off to hide it without uninstalling."
+          "markdownDescription": "%config.enabled.desc%"
         },
         "capibaraPet.size": {
           "type": "number",
           "default": 84,
           "minimum": 40,
           "maximum": 160,
-          "markdownDescription": "Size of the capybara, in pixels."
+          "markdownDescription": "%config.size.desc%"
         },
         "capibaraPet.speed": {
           "type": "number",
           "default": 1,
           "minimum": 0.25,
           "maximum": 3,
-          "markdownDescription": "Movement speed multiplier for walking and running (`1` = default)."
+          "markdownDescription": "%config.speed.desc%"
         },
         "capibaraPet.coffeeAfterSeconds": {
           "type": "number",
           "default": 6,
           "minimum": 1,
           "maximum": 600,
-          "markdownDescription": "Seconds of inactivity before the capybara takes a coffee break."
+          "markdownDescription": "%config.coffeeAfterSeconds.desc%"
         },
         "capibaraPet.sleepAfterSeconds": {
           "type": "number",
           "default": 15,
           "minimum": 2,
           "maximum": 3600,
-          "markdownDescription": "Seconds of inactivity before the capybara falls asleep."
+          "markdownDescription": "%config.sleepAfterSeconds.desc%"
         },
         "capibaraPet.reactToErrors": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Whether the capybara gets scared when the active file has errors."
+          "markdownDescription": "%config.reactToErrors.desc%"
         },
         "capibaraPet.reactToDebug": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Whether the capybara celebrates when a debug session starts."
+          "markdownDescription": "%config.reactToDebug.desc%"
         },
         "capibaraPet.name": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Give your capybara a name. Shown as a tooltip on hover and in the status bar."
+          "markdownDescription": "%config.name.desc%"
         },
         "capibaraPet.bubbles": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Show small speech bubbles (e.g. when saving, sleeping, or petting)."
+          "markdownDescription": "%config.bubbles.desc%"
         },
         "capibaraPet.statusBar": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Show a status bar item that mirrors the capybara's current mood."
+          "markdownDescription": "%config.statusBar.desc%"
         }
       }
     }

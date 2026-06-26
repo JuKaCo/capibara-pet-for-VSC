@@ -1,0 +1,18 @@
+{
+  "ext.description": "Una capibara mascota que vive en un panel de tu editor: camina, corre mientras escribes, se asusta con los errores, toma café y duerme.",
+  "cmd.category": "Capibara Pet",
+  "cmd.show.title": "Mostrar la Capibara",
+  "cmd.pet.title": "Acariciar la Capibara",
+  "cmd.toggle.title": "Mostrar/Ocultar la Capibara",
+  "config.title": "Capibara Pet",
+  "config.enabled.desc": "Muestra la capibara. Desactívalo para ocultarla sin desinstalar.",
+  "config.size.desc": "Tamaño de la capibara, en píxeles.",
+  "config.speed.desc": "Multiplicador de velocidad al caminar y correr (`1` = por defecto).",
+  "config.coffeeAfterSeconds.desc": "Segundos de inactividad antes de que la capibara tome un café.",
+  "config.sleepAfterSeconds.desc": "Segundos de inactividad antes de que la capibara se duerma.",
+  "config.reactToErrors.desc": "Si la capibara se asusta cuando el archivo activo tiene errores.",
+  "config.reactToDebug.desc": "Si la capibara festeja cuando inicia una sesión de depuración.",
+  "config.name.desc": "Ponle nombre a tu capibara. Se muestra como tooltip al pasar el cursor y en la barra de estado.",
+  "config.bubbles.desc": "Mostrar pequeños bocadillos de diálogo (al guardar, dormir, acariciarla…).",
+  "config.statusBar.desc": "Mostrar un elemento en la barra de estado que refleja el humor actual de la capibara."
+}

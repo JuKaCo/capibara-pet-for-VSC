@@ -94,6 +94,24 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const move = JSON.stringify({ walk: 1.2 * speed, run: 3.0 * speed });
     const name = (cfg.get<string>('name', '') || '').trim();
     const bubbles = cfg.get<boolean>('bubbles', true);
+    const bgPref = cfg.get<string>('background', 'scene');
+    const k = vscode.window.activeColorTheme.kind;
+    const isDark = k === vscode.ColorThemeKind.Dark || k === vscode.ColorThemeKind.HighContrast;
+    const mode = bgPref === 'auto' ? (isDark ? 'night' : 'scene') : bgPref;
+    let stageBg = '';
+    if (mode === 'scene') {
+      stageBg = 'background:linear-gradient(180deg,#cfeaff 0%,#eaf6ff 58%,#bcdd92 58%,#a3cf73 100%);';
+    } else if (mode === 'night') {
+      stageBg = 'background:' +
+        'radial-gradient(1.5px 1.5px at 18% 16%, #ffffffcc, transparent),' +
+        'radial-gradient(1.5px 1.5px at 52% 10%, #ffffffaa, transparent),' +
+        'radial-gradient(1.5px 1.5px at 78% 22%, #ffffff99, transparent),' +
+        'linear-gradient(180deg,#0b1026 0%,#1c2747 58%,#243018 58%,#2e3a1e 100%);';
+    } else if (mode === 'solid') {
+      stageBg = 'background:var(--vscode-sideBar-background, #1e1e1e);';
+    }
+    const sceneMode = mode === 'scene' || mode === 'night';
+    const floorCss = sceneMode ? '#floor{display:none;}' : '';
     const esc = (t: string) =>
       t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -111,9 +129,10 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 <style nonce="${nonce}">
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { width:100%; height:100%; background:transparent; overflow:hidden; }
-  #stage { position:relative; width:100%; height:100%; min-height:96px; cursor:pointer; }
+  #stage { position:relative; width:100%; height:100%; min-height:96px; cursor:pointer; ${stageBg} }
   #floor { position:absolute; left:0; right:0; bottom:0; height:2px;
     background:var(--vscode-editorIndentGuide-background, #ffffff22); }
+  ${floorCss}
   #pet { position:absolute; bottom:4px; left:20px; width:${DISP}px; height:${DISP}px;
     transition:transform .08s linear; cursor:grab; }
   body.dragging, body.dragging #pet { cursor:grabbing; }
@@ -377,6 +396,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('capibaraPet')) { provider.refresh(); updateStatusBar(lastMood); }
     }),
+    vscode.window.onDidChangeActiveColorTheme(() => provider.refresh()),
     vscode.debug.onDidStartDebugSession(() => {
       if (vscode.workspace.getConfiguration('capibaraPet').get<boolean>('reactToDebug', true)) {
         provider.notify('celebrate');

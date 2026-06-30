@@ -110,6 +110,19 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "%config.statusBar.desc%"
+        },
+        "capibaraPet.background": {
+          "type": "string",
+          "default": "scene",
+          "enum": ["scene", "night", "auto", "solid", "transparent"],
+          "enumDescriptions": [
+            "Daytime scene (sky + grass).",
+            "Nighttime scene (night sky + dark ground).",
+            "Match the editor theme: day on light themes, night on dark themes.",
+            "Solid colour from the editor theme.",
+            "No background (blends with the panel)."
+          ],
+          "markdownDescription": "%config.background.desc%"
         }
       }
     }

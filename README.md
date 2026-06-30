@@ -61,6 +61,7 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | `capibaraPet.name` | `""` | Give your capybara a name (shown on hover and in the status bar). |
 | `capibaraPet.bubbles` | `true` | Show small speech bubbles (saving, sleeping, petting…). |
 | `capibaraPet.statusBar` | `true` | Show a status bar item that mirrors the current mood. |
+| `capibaraPet.background` | `scene` | Panel backdrop: `scene` (day), `night`, `auto` (matches theme), `solid`, or `transparent`. |
 
 > Tip: **click anywhere in the panel** to pet the capybara — it hops with a ❤️.
 > The capybara also **runs faster the faster you type**.

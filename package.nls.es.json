@@ -14,5 +14,6 @@
   "config.reactToDebug.desc": "Si la capibara festeja cuando inicia una sesión de depuración.",
   "config.name.desc": "Ponle nombre a tu capibara. Se muestra como tooltip al pasar el cursor y en la barra de estado.",
   "config.bubbles.desc": "Mostrar pequeños bocadillos de diálogo (al guardar, dormir, acariciarla…).",
-  "config.statusBar.desc": "Mostrar un elemento en la barra de estado que refleja el humor actual de la capibara."
+  "config.statusBar.desc": "Mostrar un elemento en la barra de estado que refleja el humor actual de la capibara.",
+  "config.background.desc": "Fondo del panel detrás de la capibara: `scene` (día), `night` (noche), `auto` (según el tema), `solid` (color del tema) o `transparent`."
 }

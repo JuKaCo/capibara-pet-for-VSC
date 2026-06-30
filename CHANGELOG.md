@@ -2,12 +2,16 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
-## [0.7.0]
+## [0.8.0]
 
 ### Added
 - **Backgrounds**: optional CSS backdrops behind the pet via `capibaraPet.background` —
   `scene` (day), `night`, `auto` (follows the editor theme), `solid` (theme colour),
   or `transparent`.
+
+## [0.7.0]
+
+### Added
 - **Show/Hide command** (`capibaraPet.toggle`) to quickly turn the pet on or off.
 - **Drag to move**: grab the capybara with the mouse and slide it along the panel.
 

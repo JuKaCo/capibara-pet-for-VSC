@@ -2,7 +2,7 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "%ext.description%",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },

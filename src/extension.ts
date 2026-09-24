@@ -10,11 +10,16 @@ import * as vscode from 'vscode';
 //   celebrate cheers when you save (or when a debug session starts)
 //   scared    gets scared if the file has errors
 //   coffee    sips coffee during medium pauses
-//   sleep     sleeps after a long pause (the sprite already carries 💤)
-// Click the capybara -> it hops and a heart floats up. The animation pauses when
-// the view is hidden, and it respects the user's prefers-reduced-motion setting.
+//   sleep     sleeps after a long pause (pixel "z"s float up from the stage)
+// Click the capybara -> it hops and a pixel heart floats up. The animation pauses
+// when the view is hidden, and it respects the user's prefers-reduced-motion setting.
+// The stage (day/night scenery, shadow and particles) is procedural pixel art drawn
+// by media/pixelart.js on low-res canvases; the pet moves on the same pixel grid.
 // The webview reports its mood back so a status bar item can mirror it; speech
 // bubbles, the pet's name, and typing-intensity speed are all configurable.
+
+// Sprite cells are SPRITE_GRID x SPRITE_GRID pixel art (made with tools/pixelize.py).
+const SPRITE_GRID = 42;
 
 interface SheetCfg { n: number; dur: number; }
 const SHEETS: { [s: string]: SheetCfg } = {
@@ -58,9 +63,9 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     if (this.view) { this.view.webview.html = this.html(this.view.webview); }
   }
 
-  private uri(webview: vscode.Webview, name: string): string {
+  private uri(webview: vscode.Webview, file: string): string {
     return webview
-      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', name + '.png'))
+      .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', file))
       .toString();
   }
 
@@ -75,13 +80,20 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const DISP = Math.round(clamp(cfg.get<number>('size', 84), 40, 160));
     const speed = clamp(cfg.get<number>('speed', 1), 0.25, 3);
     const TICK = 70;
+    // One "art pixel" = one sprite pixel on screen; the scenery, particles and the
+    // movement grid all use it. Sizes that are multiples of SPRITE_GRID (42, 84,
+    // 126) give whole screen pixels, so the art stays perfectly even.
+    const PX = DISP / SPRITE_GRID;
+    // CSS offset of the sprite's feet from the stage bottom (they sit 2 px above the cell bottom).
+    const FEET = 4 + PX * 2;
+    const BPX = Math.max(1, Math.round(PX)); // bubble border/tail thickness
     const coffeeAfter = Math.round(clamp(cfg.get<number>('coffeeAfterSeconds', 6), 1, 600) * 1000 / TICK);
     const sleepAfter = Math.round(clamp(cfg.get<number>('sleepAfterSeconds', 15), 2, 3600) * 1000 / TICK);
     const states = Object.keys(SHEETS);
 
     const classes = states.map((s) => {
       const { n, dur } = SHEETS[s];
-      const url = this.uri(webview, s + '_sheet');
+      const url = this.uri(webview, s + '_sheet.png');
       return `.s-${s}{background-image:url('${url}');background-size:${n * DISP}px ${DISP}px;` +
         `animation:play${n} ${dur}s steps(${n}) infinite;}`;
     }).join('\n  ');
@@ -94,23 +106,23 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const move = JSON.stringify({ walk: 1.2 * speed, run: 3.0 * speed });
     const name = (cfg.get<string>('name', '') || '').trim();
     const bubbles = cfg.get<boolean>('bubbles', true);
-    const bgPref = cfg.get<string>('background', 'scene');
+    const bgPref = cfg.get<string>('background', 'time');
     const k = vscode.window.activeColorTheme.kind;
     const isDark = k === vscode.ColorThemeKind.Dark || k === vscode.ColorThemeKind.HighContrast;
     const mode = bgPref === 'auto' ? (isDark ? 'night' : 'scene') : bgPref;
+    // The scene/night scenery is painted by pixelart.js; these are just fallbacks.
     let stageBg = '';
-    if (mode === 'scene') {
-      stageBg = 'background:linear-gradient(180deg,#cfeaff 0%,#eaf6ff 58%,#bcdd92 58%,#a3cf73 100%);';
+    if (mode === 'scene' || mode === 'time') {
+      stageBg = 'background:#93cbf4;';
+    } else if (mode === 'sunset') {
+      stageBg = 'background:#e6765e;';
     } else if (mode === 'night') {
-      stageBg = 'background:' +
-        'radial-gradient(1.5px 1.5px at 18% 16%, #ffffffcc, transparent),' +
-        'radial-gradient(1.5px 1.5px at 52% 10%, #ffffffaa, transparent),' +
-        'radial-gradient(1.5px 1.5px at 78% 22%, #ffffff99, transparent),' +
-        'linear-gradient(180deg,#0b1026 0%,#1c2747 58%,#243018 58%,#2e3a1e 100%);';
+      stageBg = 'background:#0c1330;';
     } else if (mode === 'solid') {
       stageBg = 'background:var(--vscode-sideBar-background, #1e1e1e);';
     }
-    const sceneMode = mode === 'scene' || mode === 'night';
+    // 'time' is resolved in the webview from the local clock (and switches live).
+    const sceneMode = ['time', 'scene', 'sunset', 'night'].indexOf(mode) >= 0;
     const floorCss = sceneMode ? '#floor{display:none;}' : '';
     const esc = (t: string) =>
       t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -130,33 +142,37 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { width:100%; height:100%; background:transparent; overflow:hidden; }
   #stage { position:relative; width:100%; height:100%; min-height:96px; cursor:pointer; ${stageBg} }
-  #floor { position:absolute; left:0; right:0; bottom:0; height:2px;
+  .pix { position:absolute; left:0; bottom:0; pointer-events:none; image-rendering:pixelated; }
+  #scene { z-index:0; }
+  #floor { position:absolute; left:0; right:0; bottom:0; height:2px; z-index:1;
     background:var(--vscode-editorIndentGuide-background, #ffffff22); }
   ${floorCss}
   #pet { position:absolute; bottom:4px; left:20px; width:${DISP}px; height:${DISP}px;
-    transition:transform .08s linear; cursor:grab; }
+    z-index:2; cursor:grab; }
+  #fx { z-index:3; }
   body.dragging, body.dragging #pet { cursor:grabbing; }
   #breath { width:100%; height:100%; transform-origin:bottom center; }
-  #breath.breathing { animation:breathe 3.2s ease-in-out infinite; }
-  @keyframes breathe { 0%,100%{transform:scaleY(1);} 50%{transform:scaleY(1.035);} }
-  #sprite { width:100%; height:100%; background-repeat:no-repeat;
-    image-rendering:pixelated; filter:drop-shadow(0 3px 2px rgba(0,0,0,.25)); }
-  .heart { position:absolute; font-size:18px; pointer-events:none;
-    animation:floatUp .9s ease-out forwards; }
-  @keyframes floatUp { from{opacity:1;transform:translateY(0);} to{opacity:0;transform:translateY(-40px);} }
-  .bubble { position:absolute; padding:2px 7px; border-radius:9px; white-space:nowrap;
-    font-family:var(--vscode-font-family); font-size:11px; pointer-events:none;
+  /* Breathing grows exactly one art pixel, in hard steps (no smooth tweening). */
+  #breath.breathing { animation:breathe 3.2s step-end infinite; }
+  @keyframes breathe { 0%{transform:scaleY(1);} 50%{transform:scaleY(${((DISP + PX) / DISP).toFixed(4)});} 100%{transform:scaleY(1);} }
+  #sprite { width:100%; height:100%; background-repeat:no-repeat; image-rendering:pixelated; }
+  /* Pixel speech bubble: square corners notched with box-shadows (8-bit border). */
+  .bubble { position:absolute; z-index:4; margin-bottom:${BPX}px; padding:1px 6px; white-space:nowrap;
+    font-family:var(--vscode-editor-font-family, monospace); font-size:11px; font-weight:bold;
+    pointer-events:none; --bd:var(--vscode-editorHoverWidget-border, #454545);
     background:var(--vscode-editorHoverWidget-background, #252526);
     color:var(--vscode-editorHoverWidget-foreground, #dddddd);
-    border:1px solid var(--vscode-editorHoverWidget-border, #454545);
-    animation:bubblePop 1.6s ease-out forwards; }
+    box-shadow:0 -${BPX}px 0 0 var(--bd), 0 ${BPX}px 0 0 var(--bd), -${BPX}px 0 0 0 var(--bd), ${BPX}px 0 0 0 var(--bd);
+    animation:bubblePop 1.6s steps(2, end) forwards; }
+  .bubble::after { content:''; position:absolute; left:50%; bottom:-${BPX * 2}px;
+    width:${BPX}px; height:${BPX}px; background:var(--bd); }
   @keyframes bubblePop {
-    0%{opacity:0;transform:translateX(-50%) translateY(6px) scale(.8);}
-    15%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
-    80%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
-    100%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(1);} }
+    0%{opacity:0;transform:translateX(-50%) translateY(${BPX * 2}px);}
+    12%{opacity:1;transform:translateX(-50%) translateY(0);}
+    82%{opacity:1;transform:translateX(-50%) translateY(0);}
+    100%{opacity:0;transform:translateX(-50%) translateY(-${BPX * 2}px);} }
   body.paused #sprite { animation-play-state:paused; }
-  @media (prefers-reduced-motion: reduce) { #sprite { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { #sprite, .bubble { animation:none !important; } }
   ${classes}
   ${keyframes}
 </style>
@@ -166,6 +182,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   <div id="pet" title="${esc(name)}"><div id="breath"><div id="sprite" class="s-walk"></div></div></div>
   <div id="floor"></div>
 </div>
+<script nonce="${nonce}" src="${this.uri(webview, 'pixelart.js')}"></script>
 <script nonce="${nonce}">
   const MOVE = ${move};
   const TICK = ${TICK};
@@ -174,6 +191,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   const PET = ${DISP};
   const BUBBLES = ${bubbles};
   const PETS = ['hi!', 'hee!', '♥'];
+  const PX = ${PX};   // art pixel: the pet snaps to this grid, like the scenery
 
   const vscodeApi = acquireVsCodeApi();
   const pet = document.getElementById('pet');
@@ -181,10 +199,14 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   const sprite = document.getElementById('sprite');
   const stage = document.getElementById('stage');
   const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const snap = (v) => Math.round(v / PX) * PX;
+  const pix = window.PixelArt.create({
+    stage, px: PX, pet: PET, base: 4, feet: ${FEET}, mode: '${sceneMode ? mode : 'none'}', reduced: REDUCED,
+  });
 
   let x = 20, dir = 1;
   let inactivity = 0, runFor = 0, celebrateFor = 0, scaredFor = 0, jumpFor = 0, typeRate = 0;
-  let lastState = '';
+  let lastState = '', frameN = 0;
 
   // Idle micro-behaviour (no new sprites): while strolling it occasionally stops
   // for a moment, sometimes looking the other way; it "breathes" while standing.
@@ -237,13 +259,20 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
       if (x >= max) { x = max; dir = -1; }
       if (x <= 0)   { x = 0;   dir = 1; }
     }
-    pet.style.left = x + 'px';
+    const px = snap(x);
+    pet.style.left = px + 'px';
     const face = (dir > 0 ? 1 : -1) * (look > 0 ? -1 : 1);
-    pet.style.transform = face > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+    // Scared: shiver sideways by one art pixel.
+    frameN++;
+    const shiver = s === 'scared' && !REDUCED && !dragging && (frameN >> 1) % 2 ? PX : 0;
+    pet.style.transform = 'translateX(' + shiver + 'px) scaleX(' + (face > 0 ? 1 : -1) + ')';
 
     // Breathe while calm and standing (paused stroll or coffee break).
     const calm = (s === 'walk' && standing) || s === 'coffee';
     breath.classList.toggle('breathing', calm && !REDUCED);
+
+    // Scenery, shadow and particles follow the (snapped) pet.
+    pix.frame({ x: px, face: face, state: s, moving: mv > 0 });
   }
 
   let timer = null;
@@ -251,16 +280,8 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
   start();
 
-  // Click the pet: a little hop and a heart floating up.
-  function heart() {
-    const h = document.createElement('div');
-    h.className = 'heart';
-    h.textContent = '❤️';
-    h.style.left = (x + PET / 2 - 9) + 'px';
-    h.style.bottom = (4 + PET) + 'px';
-    stage.appendChild(h);
-    setTimeout(() => h.remove(), 900);
-  }
+  // Click the pet: a little hop and a pixel heart floating up.
+  function heart() { pix.heart({ x: snap(x), face: dir }); }
 
   // Small speech bubble above the pet (one at a time).
   let curBubble = null;
@@ -270,7 +291,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const b = document.createElement('div');
     b.className = 'bubble';
     b.textContent = text;
-    b.style.left = (x + PET / 2) + 'px';
+    b.style.left = snap(x + PET / 2) + 'px';
     b.style.bottom = (8 + PET) + 'px';
     stage.appendChild(b);
     curBubble = b;
@@ -296,7 +317,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const r = stage.getBoundingClientRect();
     const max = Math.max(0, stage.clientWidth - PET);
     x = Math.min(max, Math.max(0, e.clientX - r.left - PET / 2));
-    pet.style.left = x + 'px';
+    pet.style.left = snap(x) + 'px';
   });
   window.addEventListener('mouseup', () => {
     if (!dragging) { return; }

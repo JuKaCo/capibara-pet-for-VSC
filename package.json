@@ -2,7 +2,7 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "%ext.description%",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
@@ -113,11 +113,13 @@
         },
         "capibaraPet.background": {
           "type": "string",
-          "default": "scene",
-          "enum": ["scene", "night", "auto", "solid", "transparent"],
+          "default": "time",
+          "enum": ["time", "scene", "sunset", "night", "auto", "solid", "transparent"],
           "enumDescriptions": [
-            "Daytime scene (sky + grass).",
-            "Nighttime scene (night sky + dark ground).",
+            "Follow the local time: day (7:00–17:30), sunset (17:30–19:30, and dawn 6:00–7:00) and night. Switches by itself.",
+            "Pixel-art day by the lake: dithered sky, sun, drifting clouds, birds, hills, reeds and a meadow.",
+            "Pixel-art sunset: purple-orange sky, the sun setting behind the hills, glowing water and the first stars.",
+            "Pixel-art night: twinkling stars, moon glitter on the lake, shooting stars and fireflies.",
             "Match the editor theme: day on light themes, night on dark themes.",
             "Solid colour from the editor theme.",
             "No background (blends with the panel)."

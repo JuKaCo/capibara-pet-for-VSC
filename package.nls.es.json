@@ -6,7 +6,7 @@
   "cmd.toggle.title": "Mostrar/Ocultar la Capibara",
   "config.title": "Capibara Pet",
   "config.enabled.desc": "Muestra la capibara. Desactívalo para ocultarla sin desinstalar.",
-  "config.size.desc": "Tamaño de la capibara, en píxeles.",
+  "config.size.desc": "Tamaño de la capibara, en píxeles. Los múltiplos de 42 (42, 84, 126) mantienen el pixel art perfectamente nítido.",
   "config.speed.desc": "Multiplicador de velocidad al caminar y correr (`1` = por defecto).",
   "config.coffeeAfterSeconds.desc": "Segundos de inactividad antes de que la capibara tome un café.",
   "config.sleepAfterSeconds.desc": "Segundos de inactividad antes de que la capibara se duerma.",
@@ -15,5 +15,5 @@
   "config.name.desc": "Ponle nombre a tu capibara. Se muestra como tooltip al pasar el cursor y en la barra de estado.",
   "config.bubbles.desc": "Mostrar pequeños bocadillos de diálogo (al guardar, dormir, acariciarla…).",
   "config.statusBar.desc": "Mostrar un elemento en la barra de estado que refleja el humor actual de la capibara.",
-  "config.background.desc": "Fondo del panel detrás de la capibara: `scene` (día), `night` (noche), `auto` (según el tema), `solid` (color del tema) o `transparent`."
+  "config.background.desc": "Fondo del panel detrás de la capibara: `time` (escena de lago en pixel art que sigue la hora local: día, atardecer, noche), `scene` (siempre de día), `sunset` (atardecer), `night` (noche), `auto` (día o noche según el tema), `solid` (color del tema) o `transparent`."
 }

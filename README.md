@@ -7,7 +7,7 @@
 
 A little capybara pet that lives in a panel inside your VS Code editor. It strolls around calmly, runs while you type, gets scared when there are errors, sips its coffee during short breaks, and falls asleep if you leave it alone for a while.
 
-Animated with spritesheets and CSS — flicker-free and never in the way of your code.
+Animated with spritesheets on a procedural pixel-art stage — flicker-free and never in the way of your code.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/demo.gif" alt="Capibara Pet in action" width="640">
@@ -61,10 +61,27 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | `capibaraPet.name` | `""` | Give your capybara a name (shown on hover and in the status bar). |
 | `capibaraPet.bubbles` | `true` | Show small speech bubbles (saving, sleeping, petting…). |
 | `capibaraPet.statusBar` | `true` | Show a status bar item that mirrors the current mood. |
-| `capibaraPet.background` | `scene` | Panel backdrop: `scene` (day), `night`, `auto` (matches theme), `solid`, or `transparent`. |
+| `capibaraPet.background` | `time` | Panel backdrop: `time` (follows the local time: day, sunset, night), `scene` (day), `sunset`, `night`, `auto` (day/night by theme), `solid`, or `transparent`. |
 
 > Tip: **click anywhere in the panel** to pet the capybara — it hops with a ❤️.
 > The capybara also **runs faster the faster you type**.
+
+## Pixel art
+
+The capybara is true pixel art: every state is drawn on a 42×42 grid with a shared 7-colour palette. The backdrop is drawn procedurally on the **same pixel grid**, so it fits any panel size without extra images: hills with trees, a flowery meadow, a dirt path and a **lake** — the capybara's natural habitat — with the hills reflected in it, reeds, cattails, water lilies, shimmering water and the odd fish ripple.
+
+By default (`time`) the light follows your local clock and changes by itself:
+
+- **Day** (7:00–17:30): dithered blue sky, sun, drifting clouds and the odd flock of birds.
+- **Sunset** (17:30–19:30, and dawn 6:00–7:00): purple-orange sky, the sun setting behind the hills, glowing water and the first stars.
+- **Night**: twinkling stars, the moon's glitter on the lake, shooting stars now and then, and blinking fireflies.
+
+You can also pin one with `scene`, `sunset` or `night`.
+- **Effects**: a hard pixel shadow, dust puffs when it walks, runs or lands, confetti and sparkles when it celebrates, a "!" when it gets scared, and a pixel heart when you pet it.
+
+The pet moves on the same pixel grid as the scenery. With `prefers-reduced-motion`, the scene stays still and the effects are off.
+
+> Tip: sizes that are multiples of 42 (`42`, `84`, `126`) keep every pixel perfectly even.
 
 ## Install from the Marketplace
 

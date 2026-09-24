@@ -2,6 +2,40 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.9.0]
+
+### Added
+- **Pixel-art stage**: the scenery is drawn procedurally on a low-res canvas
+  (Bayer-dithered sky, hills, trees, meadow and path) and adapts to any panel size.
+- **Lake**: the capybara's habitat — a lake between the hills and the path with the
+  hills mirrored in it, reeds, cattails and water lilies on the bank, shimmering water,
+  a glitter path under the sun or moon, and the odd fish ripple.
+- **Time of day**: the new `time` background (now the default) follows the local
+  clock — day from 7:00 to 17:30, sunset from 17:30 to 19:30 (and at dawn, 6:00–7:00),
+  night otherwise — and relights itself live. The landscape stays the same; only the
+  light changes.
+- **Sunset** background (`sunset`): purple-orange sky, the sun going down behind the
+  hills, back-lit clouds, bird silhouettes and the first stars.
+- **Sky life**: drifting clouds and birds by day; twinkling stars, a moon, shooting
+  stars and fireflies at night.
+- **Pixel effects**: dust puffs when walking, running or landing a jump, confetti and
+  sparkles when celebrating, a "!" and sweat drops when scared, coffee steam, floating
+  "z"s when asleep, and a pixel heart when petted.
+
+### Changed
+- **True pixel-art sprites**: all seven spritesheets are now real pixel art on a
+  42×42 grid with one shared 7-colour palette, a clean 1 px outline and a rim
+  highlight (and ~1 KB each). The ground line baked under every frame is gone (the
+  stage draws the shadow). The Marketplace icon and the view icon are pixel art too.
+- **One pixel grid for everything**: one sprite pixel = one art pixel of the scenery
+  and effects. The default size (84) shows each pixel as 2×2 screen pixels; multiples
+  of 42 keep the art perfectly even.
+- `scene` and `night` are now pixel-art scenes instead of CSS gradients, and
+  `capibaraPet.background` defaults to `time` (was `scene`).
+- Movement, breathing and the shadow now follow the pixel grid: the pet snaps to art
+  pixels, breathes in one-pixel steps, shivers when scared, and the blurry drop-shadow
+  became a hard pixel shadow. Speech bubbles have square pixel borders.
+
 ## [0.8.0]
 
 ### Added

@@ -35,5 +35,10 @@
 ## What I do when you hand it over
 1. I crop the green background to transparency.
 2. I detect each frame by content and re-align them to an EXACT grid (same size and baseline).
-3. I generate the final spritesheet `media/walk_sheet.png` (and run/sleep if you make them).
-4. I switch the webview to CSS `steps()` animation → smooth and flicker-free.
+3. I build the hi-res strips (128 px cells) in a scratch folder — not in `media/`.
+4. I turn them into true pixel art with
+   `python tools/pixelize.py --src <hi-res folder> --out media --icon`:
+   ground line removed, loose details dropped (the stage draws zzz/steam/sweat as
+   particles), 42×42 grid, shared palette, 1 px outline. `--icon` also regenerates
+   `media/icon.png`.
+5. The webview animates the strips with CSS `steps()` → flicker-free.

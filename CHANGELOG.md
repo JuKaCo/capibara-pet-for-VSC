@@ -42,8 +42,10 @@ All notable changes to the **Capibara Pet** extension are documented here.
 - **Holidays**: pumpkins (glowing at night) and bats at Halloween, a Santa hat on the
   capybara at Christmas, fireworks on New Year's Eve.
 - The status bar tooltip shows the current weather and season.
+- **README**: a gallery of real screenshots of the new features (day/sunset/night,
+  weather, seasons and holidays, swimming, feeding, fur colours).
 - **Baby capybara** (`capibaraPet.baby`, on by default): a half-size baby that follows
-  its mum — walking behind her, running when she runs, napping by her side, hopping
+  its mum — walking behind her, running when she runs (or to catch up), napping by her side, hopping
   when she celebrates and pressing close when she's scared. When she swims, it rides
   on her back.
 - **Feed the Capybara** command: a watermelon slice drops in front of it, it hurries

@@ -15,4 +15,9 @@ relative image paths):
 https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/demo.gif
 ```
 
-Add more screenshots here (e.g. `states.png`) and link them the same way if you want.
+- **Feature screenshots** used by the main `README.md`: `hero.png`, `time-of-day.png`,
+  `weather.png`, `seasons.png`, `swim.png`, `feed.png`, `fur-colors.png`. They are real
+  renders of the webview (scene + sprite + effects composited at art-pixel scale and
+  upscaled with nearest-neighbour), so they stay crisp and tiny (2–40 KB each).
+
+Add more screenshots here and link them the same way if you want.

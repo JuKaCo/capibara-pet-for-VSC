@@ -78,34 +78,72 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 > Tip: **click anywhere in the panel** to pet the capybara — it hops with a ❤️.
 > The capybara also **runs faster the faster you type**.
 
-## Pixel art
+## A little pixel-art world
 
-The capybara is true pixel art: every state is drawn on a 42×42 grid with a shared 7-colour palette. The backdrop is drawn procedurally on the **same pixel grid**, so it fits any panel size without extra images: hills with trees, a flowery meadow, a dirt path and a **lake** — the capybara's natural habitat — with the hills reflected in it, reeds, cattails, water lilies, shimmering water and the odd fish ripple.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/hero.png" alt="The capybara and its baby walking by the lake" width="800">
+</p>
+
+The capybara is true pixel art: every state is drawn on a 42×42 grid with a shared 7-colour palette. Its world is drawn procedurally on the **same pixel grid**, so it fits any panel size without extra images: hills with trees, a flowery meadow, a dirt path and a **lake** — the capybara's natural habitat — with the hills reflected in it, reeds, cattails, water lilies, shimmering water and the odd fish ripple.
+
+### Day, sunset and night
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/time-of-day.png" alt="The same lake by day, at sunset and at night" width="640">
+</p>
 
 By default (`time`) the light follows your local clock and changes by itself:
 
 - **Day** (7:00–17:30): dithered blue sky, sun, drifting clouds and the odd flock of birds.
 - **Sunset** (17:30–19:30, and dawn 6:00–7:00): purple-orange sky, the sun setting behind the hills, glowing water and the first stars.
-- **Night**: twinkling stars, the moon's glitter on the lake, shooting stars now and then, and blinking fireflies.
+- **Night**: twinkling stars, the moon — in **tonight's real phase** — glittering on the lake, shooting stars now and then, and blinking fireflies.
 
 You can also pin one with `scene`, `sunset` or `night`.
 
-The world around it is alive too:
+### Weather
 
-- **Weather** changes by itself every few hours: clear skies, clouds, rain rippling the lake, a storm with lightning behind the hills, morning fog — and in winter, snow with white hills and a frozen lake (no swimming then!).
-- **Seasons** follow your hemisphere: spring blossoms and falling petals, autumn trees and falling leaves, duller winter fields.
-- **The moon** shows tonight's real phase.
-- **Lake visitors**: a duck family crossing the water and a turtle sunning on a log (it dives when it rains, or when the capybara swims by).
-- **Holidays**: pumpkins and bats at Halloween, a Santa hat at Christmas, fireworks on New Year's Eve.
-- **Effects**: a hard pixel shadow, dust puffs when it walks, runs or lands, confetti and sparkles when it celebrates, a "!" when it gets scared, and a pixel heart when you pet it.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/weather.png" alt="Rain, a night storm, morning fog and snow with a frozen lake" width="800">
+</p>
 
-And it's not alone: a **baby capybara** follows it everywhere — trotting behind, napping by its side, hopping when it celebrates, hiding behind it when it's scared, and riding on its back when it swims. Pick a fur colour you like (`capibaraPet.color`), and turn on `capibaraPet.sounds` for little 8-bit chirps and splashes.
+The weather changes by itself every few hours (`capibaraPet.weather`): clear skies, clouds, rain rippling the lake, a storm with lightning behind the hills, morning fog — and in winter, snow with white hills and a **frozen lake** (no swimming then!).
 
-Hover the 🦫 status bar item to see the current weather and season.
+### Seasons and holidays
 
-The pet moves on the same pixel grid as the scenery. With `prefers-reduced-motion`, the scene stays still and the effects are off.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/seasons.png" alt="Spring blossoms, autumn trees, Halloween pumpkins and a Santa hat" width="800">
+</p>
 
-> Tip: sizes that are multiples of 42 (`42`, `84`, `126`) keep every pixel perfectly even.
+**Seasons** follow your hemisphere: spring blossoms and falling petals, autumn trees and falling leaves, duller winter fields. On the right dates there are **pumpkins and bats** at Halloween, a **Santa hat** at Christmas and **fireworks** on New Year's Eve.
+
+### A swim in the lake
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/swim.png" alt="The capybara swimming with its baby on its back" width="480">
+</p>
+
+On some breaks the capybara walks to the water and goes for a swim instead of having its coffee (or run *Go for a Swim*) — its baby rides on its back. Any editor activity brings it back out, dripping and shaking the water off. The lake has visitors too: a **duck family** crossing the water now and then, and a **turtle** sunning on a log (it dives when it rains, or when the capybara swims by).
+
+### Family, food and fur
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/feed.png" alt="The capybara and its baby sharing a watermelon" width="360">
+</p>
+
+A **baby capybara** follows it everywhere — trotting behind, napping by its side, hopping when it celebrates and hiding behind it when it's scared. Run *Feed the Capybara* and a **watermelon** slice drops in: it munches it bite by bite, and the baby shares.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/fur-colors.png" alt="The five fur colours: classic, chocolate, golden, cream and ash" width="640">
+</p>
+
+Pick a fur colour with `capibaraPet.color` — `classic`, `chocolate`, `golden`, `cream` or `ash` — and turn on `capibaraPet.sounds` for little 8-bit chirps and splashes.
+
+### Little details
+
+- **Effects**: a hard pixel shadow, dust puffs when it walks, runs or lands, confetti and sparkles when it celebrates, a "!" and sweat drops when it gets scared, and a pixel heart when you pet it.
+- Hover the 🦫 status bar item to see the current weather and season.
+- The pet moves on the same pixel grid as the scenery. With `prefers-reduced-motion`, the scene stays still and the effects are off.
+- Sizes that are multiples of 42 (`42`, `84`, `126`) keep every pixel perfectly even.
 
 There are a couple of surprises too: keep it calm for a while in daylight and you may get a visitor 🐦 — and try petting it many times in a row 🍊.
 

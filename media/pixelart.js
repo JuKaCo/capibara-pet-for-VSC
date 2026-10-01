@@ -990,7 +990,8 @@
         face = fx > target ? 1 : -1;
       }
       target = clamp(target, 0, W - BABY_W);
-      const d = target - b.x, speed = p.state === 'run' ? 1.8 : 0.8;
+      // Trots behind her; runs when she runs or when it has fallen far behind.
+      const d = target - b.x, speed = p.state === 'run' || Math.abs(d) > BABY_W * 2 ? 1.8 : 0.8;
       b.moving = anim && Math.abs(d) > 1 && p.state !== 'sleep';
       if (b.moving) { b.x += Math.sign(d) * Math.min(Math.abs(d), speed); b.face = Math.sign(d); b.step++; }
       else { b.face = face; }

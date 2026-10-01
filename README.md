@@ -22,10 +22,11 @@ The capybara reacts to what you do:
 | 🚶 **Walk** | Default — strolling around the panel |
 | 🏃 **Run** | While you type |
 | 🦘 **Jump** | When you move to another line |
-| 🎉 **Celebrate** | When you save a file, or start a debug session |
-| 😱 **Scared** | When the file has errors |
+| 🎉 **Celebrate** | When you save a file, start a debug session, commit or push, or a build/test passes |
+| 😱 **Scared** | When the file has errors, a build/test fails, or Git hits a merge conflict |
 | ☕ **Coffee** | After a medium pause (~6 s) |
 | 😴 **Sleep** | After a long pause (~15 s) — with its 💤 |
+| 🏊 **Swim** | On some breaks it goes for a swim in the lake instead (or run *Go for a Swim*) — any editor activity brings it back out, dripping |
 
 ## Getting started
 
@@ -41,6 +42,7 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Capibara Pet
 |---------|--------------|
 | **Capibara Pet: Show the Capybara** | Reveals and focuses the pet's view. |
 | **Capibara Pet: Pet the Capybara** | Give it some love — it hops with a ❤️. |
+| **Capibara Pet: Go for a Swim** | Sends it for a dip in the lake (scenery backgrounds only). |
 | **Capibara Pet: Show/Hide the Capybara** | Quickly toggle the pet on or off. |
 
 > You can also **drag the capybara** left/right inside the panel with your mouse.
@@ -58,6 +60,8 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | `capibaraPet.sleepAfterSeconds` | `15` | Idle seconds before falling asleep. |
 | `capibaraPet.reactToErrors` | `true` | Whether it gets scared when the file has errors. |
 | `capibaraPet.reactToDebug` | `true` | Whether it celebrates when a debug session starts. |
+| `capibaraPet.reactToGit` | `true` | Celebrates commits and pushes, gets scared by merge conflicts, hops when you switch branch. |
+| `capibaraPet.reactToTasks` | `true` | Celebrates passing builds/tests and gets scared by failing ones (tasks, and commands like `npm test` in the terminal). |
 | `capibaraPet.name` | `""` | Give your capybara a name (shown on hover and in the status bar). |
 | `capibaraPet.bubbles` | `true` | Show small speech bubbles (saving, sleeping, petting…). |
 | `capibaraPet.statusBar` | `true` | Show a status bar item that mirrors the current mood. |
@@ -82,6 +86,8 @@ You can also pin one with `scene`, `sunset` or `night`.
 The pet moves on the same pixel grid as the scenery. With `prefers-reduced-motion`, the scene stays still and the effects are off.
 
 > Tip: sizes that are multiples of 42 (`42`, `84`, `126`) keep every pixel perfectly even.
+
+There are a couple of surprises too: keep it calm for a while in daylight and you may get a visitor 🐦 — and try petting it many times in a row 🍊.
 
 ## Install from the Marketplace
 

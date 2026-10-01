@@ -2,7 +2,7 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "%ext.description%",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
@@ -42,6 +42,11 @@
       {
         "command": "capibaraPet.pet",
         "title": "%cmd.pet.title%",
+        "category": "%cmd.category%"
+      },
+      {
+        "command": "capibaraPet.swim",
+        "title": "%cmd.swim.title%",
         "category": "%cmd.category%"
       },
       {
@@ -95,6 +100,16 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "%config.reactToDebug.desc%"
+        },
+        "capibaraPet.reactToGit": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.reactToGit.desc%"
+        },
+        "capibaraPet.reactToTasks": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.reactToTasks.desc%"
         },
         "capibaraPet.name": {
           "type": "string",

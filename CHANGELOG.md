@@ -2,6 +2,33 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.10.0]
+
+### Added
+- **Swimming**: on some breaks the capybara walks to the lake and goes for a swim
+  instead of having its coffee — a smaller swimmer (it is farther away) bobbing in the
+  water with a wake behind it. Any editor activity brings it back out with a splash,
+  dripping and shaking the water off. New command **Go for a Swim**
+  (`capibaraPet.swim`) and a 🏊 status bar mood. Needs a scenery background.
+- **A little visitor**: while the capybara is calm in daylight (strolling, sipping
+  coffee, napping or swimming), a small yellow-bellied bird sometimes lands on its head
+  and sings; it flies away when the capybara runs, jumps or gets scared.
+- **Easter egg**: pet the capybara five times in a row and it wears a mandarin on its
+  head (also while swimming, hot-spring style). It falls off, bouncing, if it runs or
+  jumps.
+- **Git reactions** (`capibaraPet.reactToGit`): celebrates your commits ("commit!") and
+  pushes ("pushed!"), gets scared by a merge conflict, and hops showing the branch name
+  when you switch branch. Uses the built-in Git extension; nothing to set up.
+- **Build & test reactions** (`capibaraPet.reactToTasks`): when a task finishes it
+  celebrates ("tests ✓", "build ✓") or gets scared ("tests ✗") depending on the exit
+  code. Commands typed in the integrated terminal count too — test runners and builds
+  only (`npm test`, `npm run build`, `npx jest`, `pytest`, `go test`, `cargo build`,
+  `make`, `dotnet build`…), judged by the program and its subcommand so that something
+  like `git commit -m "fix tests"` doesn't trigger it (needs shell integration).
+
+### Changed
+- Reactions can now carry their own speech bubble text.
+
 ## [0.9.0]
 
 ### Added

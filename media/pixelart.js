@@ -11,7 +11,10 @@
  * Layers (bottom to top):
  *   #scene  sky, sun/moon, clouds/stars, hills, meadow, lake, path, pet shadow
  *   #pet    the capybara sprite (DOM, owned by the webview)
- *   #fx     particles: dust, hearts, confetti, sparkles, "!" alert, zzz, steam, sweat
+ *   #fx     particles: dust, hearts, confetti, sparkles, "!" alert, zzz, steam, sweat,
+ *           and what rides on the capybara's head (a little bird, a mandarin)
+ * The capybara can also go for a swim: the DOM pet hides and a smaller swimmer
+ * (it is farther away, in the lake) is drawn on #scene on the same pixel grid.
  */
 (function () {
   'use strict';
@@ -59,10 +62,11 @@
   }
 
   // Tiny bitmap: rows of characters, each mapped to a colour ('.' = empty).
-  function blit(ctx, rows, colours, x, y) {
+  function blit(ctx, rows, colours, x, y, flip) {
     for (let j = 0; j < rows.length; j++) {
-      for (let i = 0; i < rows[j].length; i++) {
-        const c = colours[rows[j][i]];
+      const w = rows[j].length;
+      for (let i = 0; i < w; i++) {
+        const c = colours[rows[j][flip ? w - 1 - i : i]];
         if (c) { dot(ctx, c, x + i, y + j); }
       }
     }
@@ -185,6 +189,34 @@
   const DROP_C = { b: '#6ec6ff', w: '#e6f6ff' };
   const STEAM = 'rgba(242,237,231,0.85)';
 
+  // The capybara swimming, half size (it is farther away): head and back above
+  // the water, facing right. Row 6 sits on the waterline.
+  const SWIM = [
+    '..........o.o...',
+    '.........ooooo..',
+    '........ohhfffo.',
+    '....ooooffffoffo',
+    '..oohhffffffffdo',
+    '.ohffffffffffffo',
+    'offfffffffffffso',
+  ];
+  const SWIM_C = { o: '#0a0502', f: '#c86e3d', h: '#f08952', s: '#8e4d35', d: '#7c3f2b' };
+  const SWIM_W = 16, SWIM_HEAD = 11; // width, head-top column (facing right)
+
+  // Top of the head (sprite px, facing right) of the poses that can carry
+  // something on it; on the others a mandarin falls off and a bird flies away.
+  const HEAD = { walk: [25.5, 19], coffee: [19, 14], sleep: [25.5, 24] };
+
+  // A little bird (yellow belly, like the ones that ride capybaras), facing right.
+  const PERCH = ['..hh.', '.hhek', 'bbyy.', '..f..'];
+  const PERCH_C = { h: '#7a7f8c', e: '#0a0502', k: '#f2a03d', b: '#565a66', y: '#f7d148', f: '#3a2a10' };
+  const NOTE = ['.xx', '.x.', 'xx.'];
+
+  // The mandarin (the capybara-in-a-hot-spring meme); a smaller one for the swimmer.
+  const ORANGE = ['..gl.', '.ooo.', 'ohooo', 'ooood', '.ddd.'];
+  const ORANGE_S = ['.l.', 'hoo', 'ood'];
+  const ORANGE_C = { o: '#f28a1e', h: '#ffd08a', d: '#c4620e', g: '#4a7a2a', l: '#7cc444' };
+
   const BIRD = [
     ['x...x', '.x.x.', '..x..'], // wings up
     ['.....', '.xxx.', 'x...x'], // wings down
@@ -214,6 +246,10 @@
     let body = { cx: -99, cy: 0, R: 0 }, water = null, lake = null, shimmer = [];
     let birds = null, meteor = null, ripple = null, parts = [], fxDirty = false;
     let last = null, prevState = '';
+    // Swimming: the lake row it swims on and the range of its left edge (art px).
+    let swimY = 0, swimMin = 0, swimMax = -1, swimmer = null, dripFor = 0;
+    let perch = null, orange = 0, orangeWait = 0, lastHead = null;
+    const GRID = o.grid || 42;
 
     // Canvas row that contains the given CSS offset from the stage bottom.
     const row = (b) => H - 1 - Math.floor(b / PX);
@@ -418,6 +454,17 @@
         if (lx >= 0 && lx < W) { dot(f, P.shore, lx, y); }
       }
       lake = { top, lh };
+      // Where the swimmer fits: a row in the nearer half, wide enough for its body.
+      swimMin = 0; swimMax = -1;
+      if (lh >= 5) {
+        swimY = top + Math.round(lh * 0.55);
+        for (let x = 0; x + SWIM_W <= W; x++) {
+          if (isWater(x, swimY) && isWater(x + SWIM_W - 1, swimY)) {
+            if (swimMax < 0) { swimMin = x; }
+            swimMax = x;
+          }
+        }
+      }
 
       // Reeds and cattails along the bank (more of them at the rounded end).
       const clumps = 3 + Math.floor(W / 40);
@@ -548,8 +595,30 @@
     }
 
     // Hard-edged, pixel ellipse under the feet (replaces the blurry drop-shadow).
+    function drawSwimmer() {
+      if (!swimmer) { return; }
+      const sw = swimmer;
+      if (anim) {
+        sw.x += sw.face * 0.1;
+        if (sw.x <= swimMin) { sw.x = swimMin; sw.face = 1; }
+        else if (sw.x >= swimMax) { sw.x = swimMax; sw.face = -1; }
+        else if (Math.random() < 1 / 260) { sw.face = -sw.face; }
+      }
+      const bob = anim && (t >> 3) % 2 ? 1 : 0; // bobbing: one pixel under, then up
+      const x = Math.round(sw.x);
+      blit(sc, SWIM.slice(0, SWIM.length - bob), SWIM_C, x, swimY - 6 + bob, sw.face < 0);
+      // Broken waterline along the body and a wake trailing behind it.
+      for (let i = 1; i < SWIM_W - 1; i++) {
+        if ((i + (t >> 1)) % 3) { dot(sc, P.shimmer, x + i, swimY + 1); }
+      }
+      const back = sw.face > 0 ? x - 1 : x + SWIM_W;
+      for (let k = 1; k <= 8; k++) {
+        if ((k + (t >> 1)) % 3 === 0) { dot(sc, P.shimmer, back - sw.face * k, swimY + 1 + (k > 4 ? 1 : 0)); }
+      }
+    }
+
     function drawShadow(p) {
-      if (!p) { return; }
+      if (!p || swimmer) { return; }
       const cx = (p.x + o.pet / 2) / PX, rx = (o.pet * 0.34) / PX, cy = row(o.feet);
       sc.fillStyle = P.shadow;
       sc.fillRect(Math.round(cx - rx * 0.8), cy - 1, Math.round(rx * 1.6), 1);
@@ -564,6 +633,7 @@
         drawSky();
         sc.drawImage(front, 0, 0);
         drawWater();
+        drawSwimmer();
         if (P.firefly) { drawFireflies(); }
       }
       drawShadow(p);
@@ -596,12 +666,24 @@
       }
     }
 
+    function splash(x, y) {
+      if (!anim) { return; }
+      for (let i = 0; i < 10; i++) {
+        add({
+          k: 'splash', x: x + rand(-3, 3), y: y - 1, vx: rand(-0.5, 0.5), vy: -rand(0.5, 1.2),
+          g: 0.12, life: Math.round(rand(8, 12)), c: i % 3 ? DROP_C.b : DROP_C.w,
+        });
+      }
+      ripple = { x: Math.round(x), y, age: 0 };
+    }
+
     function stepPart(q) {
       if (--q.life < 0) { return false; }
       const age = q.max - q.life;
       if (q.k === 'heart') { q.vx = Math.sin(age * 0.6) * 0.3; }
       if (q.k === 'steam') { q.vx = Math.sin(age * 0.8 + q.p) * 0.25; }
       q.x += q.vx || 0; q.y += q.vy || 0; q.vy += q.g || 0;
+      if (q.k === 'fruit' && q.y >= q.floor) { q.y = q.floor; q.vy = -q.vy * 0.45; q.vx *= 0.6; }
       const x = Math.round(q.x), y = Math.round(q.y);
       const blink = q.life > 4 || q.life % 2 === 1; // flicker out, retro style
       switch (q.k) {
@@ -639,6 +721,16 @@
         case 'sweat':
           blit(fc, DROP, DROP_C, x, y);
           break;
+        case 'note':
+          if (blink) { blit(fc, NOTE, { x: P.ink }, x, y); }
+          break;
+        case 'fruit':
+          if (blink) { blit(fc, ORANGE, ORANGE_C, x - 2, y - 4); }
+          break;
+        case 'splash':
+        case 'drip':
+          dot(fc, q.c, x, y);
+          break;
         case 'alert':
           if (blink) { blit(fc, ALERT, ALERT_C, x - 1, y - 7 - (age < 3 ? age % 2 : 0)); }
           break;
@@ -646,11 +738,86 @@
       return true;
     }
 
-    function drawFx() {
-      if (!parts.length && !fxDirty) { return; }
+    // Where something can sit on the capybara's head: canvas column of its
+    // centre and the row right above it (null for poses without a spot).
+    function headAnchor(p) {
+      if (swimmer) {
+        const bob = anim && (t >> 3) % 2 ? 1 : 0;
+        const col = swimmer.face > 0 ? SWIM_HEAD : SWIM_W - 1 - SWIM_HEAD;
+        return { x: Math.round(swimmer.x) + col, y: swimY - 6 + bob, small: true };
+      }
+      const h = p && HEAD[p.state];
+      if (!h) { return null; }
+      const col = p.face > 0 ? h[0] : GRID - 1 - h[0];
+      return { x: Math.round(p.x / PX + col), y: row(o.base + (GRID - h[1]) * PX), small: false };
+    }
+
+    // A bird lands on the head while the capybara is calm (not at night) and
+    // flies off when it runs, jumps or gets scared.
+    function updateBird(p, a) {
+      const calm = !!a && (!!swimmer || !p.moving || p.state === 'walk');
+      if (!perch) {
+        if (calm && anim && mode !== 'night' && !orange && !orangeWait && Math.random() < 1 / 700) {
+          const from = Math.random() < 0.5 ? -1 : 1;
+          perch = { phase: 'in', x: a.x + from * 40, y: Math.max(1, a.y - 25), face: -from, sit: 0 };
+        }
+        return;
+      }
+      if (perch.phase === 'in') {
+        if (!calm) { perch.phase = 'out'; return; }
+        const dx = a.x - perch.x, dy = a.y - perch.y, d = Math.hypot(dx, dy);
+        if (d <= 0.8) { perch.phase = 'sit'; perch.sit = 350 + Math.floor(Math.random() * 400); }
+        else { perch.x += (dx / d) * 0.8; perch.y += (dy / d) * 0.8; perch.face = dx >= 0 ? 1 : -1; }
+      } else if (perch.phase === 'sit') {
+        if (!calm || --perch.sit <= 0) { perch.phase = 'out'; perch.face = Math.random() < 0.5 ? -1 : 1; return; }
+        perch.x = a.x; perch.y = a.y;
+        if (Math.random() < 1 / 150) { add({ k: 'note', x: a.x + 2, y: a.y - 6, vy: -0.15, vx: 0.05, life: 14 }); }
+      } else {
+        perch.x += perch.face * 0.8; perch.y -= 0.5;
+        if (perch.y < -6 || perch.x < -8 || perch.x > W + 8) { perch = null; }
+      }
+    }
+
+    // The mandarin stays on while the pose has a head spot; otherwise it falls off.
+    function updateOrange(p, a) {
+      if (orangeWait > 0) { // just given (maybe mid-hop): put it on as soon as possible
+        if (a) { orange = 900; orangeWait = 0; }
+        else { orangeWait--; }
+      }
+      if (orange > 0) {
+        if (a) { lastHead = a; if (--orange === 0 && anim) { fruitFalls(p, a); } }
+        else { if (anim && lastHead) { fruitFalls(p, lastHead); } orange = 0; }
+      }
+    }
+
+    function fruitFalls(p, a) {
+      add({
+        k: 'fruit', x: a.x, y: a.y - 3, vx: -(p.face || 1) * 0.35, vy: -0.7, g: 0.1,
+        floor: row(o.feet) - 3, life: 34,
+      });
+    }
+
+    function drawFx(p) {
+      const a = headAnchor(p);
+      updateOrange(p, a);
+      updateBird(p, a);
+      if (!parts.length && !fxDirty && !perch && !orange) { return; }
       fc.clearRect(0, 0, W, H);
+      if (orange > 0 && a) {
+        const bm = a.small ? ORANGE_S : ORANGE;
+        blit(fc, bm, ORANGE_C, a.x - (bm[0].length >> 1), a.y - bm.length + 1);
+      }
+      if (perch) {
+        const x = Math.round(perch.x), y = Math.round(perch.y);
+        if (perch.phase === 'sit') {
+          const lift = orange > 0 && a ? (a.small ? 3 : 5) : 0; // perched on the mandarin
+          blit(fc, PERCH, PERCH_C, x - 2, y - 3 - lift, (p && p.face) < 0);
+        } else {
+          blit(fc, BIRD[(t >> 1) % 2], { x: PERCH_C.b }, x - 2, y - 2);
+        }
+      }
       parts = parts.filter(stepPart);
-      fxDirty = parts.length > 0;
+      fxDirty = parts.length > 0 || !!perch || orange > 0;
     }
 
     // Automatic effects driven by the pet's state.
@@ -688,6 +855,15 @@
           vx: p.face * rand(0.15, 0.35), vy: -rand(0.3, 0.5), g: 0.07, life: 12,
         });
       }
+      if (dripFor > 0 && !swimmer) { // just out of the water: dripping
+        dripFor--;
+        if (t % 2 === 0) {
+          add({
+            k: 'drip', x: g.L + g.w * rand(0.2, 0.8), y: g.top + rand(2, (g.foot - g.top) * 0.7),
+            vy: 0.1, g: 0.06, life: 9, c: DROP_C.b,
+          });
+        }
+      }
       if (p.moving && p.state === 'run' && t % 3 === 0) { dust(p, 2, -p.face); }
       if (p.moving && p.state === 'walk' && t % 14 === 0) { dust(p, 1, -p.face); }
     }
@@ -706,6 +882,10 @@
       }
       if (scenic) { build(); }
       parts = []; fxDirty = false;
+      if (swimmer) {
+        if (swimMax < swimMin) { swimmer = null; } // the lake no longer fits
+        else { swimmer.x = clamp(swimmer.x, swimMin, swimMax); }
+      }
       drawScene(last);
     }
 
@@ -729,14 +909,48 @@
         }
         if (anim) { t++; react(p); }
         drawScene(p);
-        drawFx();
+        drawFx(p);
       },
-      // A pixel heart floating up from the pet (petting).
+      // A pixel heart floating up from the pet (petting) — or from the swimmer.
       heart(p) {
         if (!anim) { return; }
+        if (swimmer) {
+          add({ k: 'heart', x: swimmer.x + SWIM_W / 2, y: swimY - 9, vy: -0.35, life: 18 });
+          return;
+        }
         const g = geo(p);
         add({ k: 'heart', x: g.cx, y: g.top - 2, vy: -0.35, life: 18 });
       },
+      // Where the pet's left edge (CSS px) may stand to jump into the lake, or null.
+      lake() {
+        if (!scenic || swimMax < swimMin) { return null; }
+        return { from: (swimMin + SWIM_W / 2) * PX - o.pet / 2, to: (swimMax + SWIM_W / 2) * PX - o.pet / 2 };
+      },
+      swimming() { return !!swimmer; },
+      // Jump in: the DOM pet hides and the swimmer appears in the lake above it.
+      swimStart(p) {
+        if (!this.lake()) { return false; }
+        const cx = (p.x + o.pet / 2) / PX;
+        swimmer = { x: clamp(cx - SWIM_W / 2, swimMin, swimMax), face: p.face || 1 };
+        splash(swimmer.x + SWIM_W / 2, swimY);
+        dust(p, 4);
+        return true;
+      },
+      // Climb out: returns where the pet reappears ({ x: CSS left, face }).
+      swimEnd() {
+        if (!swimmer) { return null; }
+        const cx = swimmer.x + SWIM_W / 2, face = swimmer.face;
+        splash(cx, swimY);
+        swimmer = null; dripFor = 40;
+        return { x: cx * PX - o.pet / 2, face };
+      },
+      // Bubble anchor above the swimmer (CSS px: centre x, bottom offset).
+      swimmerAt() {
+        if (!swimmer) { return null; }
+        return { cx: (swimmer.x + SWIM_W / 2) * PX, top: (H - (swimY - 6)) * PX };
+      },
+      // Easter egg: a mandarin on the head.
+      orange() { orangeWait = 40; },
     };
   }
 

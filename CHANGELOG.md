@@ -26,6 +26,23 @@ All notable changes to the **Capibara Pet** extension are documented here.
   `make`, `dotnet build`…), judged by the program and its subcommand so that something
   like `git commit -m "fix tests"` doesn't trigger it (needs shell integration).
 
+- **Weather** (`capibaraPet.weather`, `auto` by default — one roll every 4 hours):
+  clear, cloudy (more clouds, greyer sky), rain (drops falling in front of the scene and
+  rippling the lake), storm (heavier rain and the odd lightning bolt behind the hills,
+  with a soft flash; off with reduced motion), morning fog drifting over the lake, and
+  snow in winter — white hills and fields, snow-capped trees and a frozen lake (no
+  swimming, no ducks). No birds, fireflies, sun or moon while it rains or snows.
+- **Seasons** (`capibaraPet.seasons`): spring blossoms with falling petals and more
+  flowers, orange autumn trees with falling leaves, duller winter fields. The hemisphere
+  (`capibaraPet.hemisphere`) is guessed from the time zone.
+- **Real moon phase**: the night moon shows tonight's phase (mirrored in the southern
+  hemisphere); its glitter on the lake fades with a thin moon.
+- **Lake visitors**: a duck with her ducklings crossing the lake now and then, and a
+  turtle sunning on a log that dives when it rains or the capybara swims close.
+- **Holidays**: pumpkins (glowing at night) and bats at Halloween, a Santa hat on the
+  capybara at Christmas, fireworks on New Year's Eve.
+- The status bar tooltip shows the current weather and season.
+
 ### Changed
 - Reactions can now carry their own speech bubble text.
 

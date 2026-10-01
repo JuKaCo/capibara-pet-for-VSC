@@ -66,6 +66,9 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | `capibaraPet.bubbles` | `true` | Show small speech bubbles (saving, sleeping, petting…). |
 | `capibaraPet.statusBar` | `true` | Show a status bar item that mirrors the current mood. |
 | `capibaraPet.background` | `time` | Panel backdrop: `time` (follows the local time: day, sunset, night), `scene` (day), `sunset`, `night`, `auto` (day/night by theme), `solid`, or `transparent`. |
+| `capibaraPet.weather` | `auto` | Scene weather: `auto` (changes every few hours), or always `clear`, `cloudy`, `rain`, `storm`, `fog` or `snow`. |
+| `capibaraPet.seasons` | `true` | Seasonal touches (blossoms, autumn leaves, winter) and holiday surprises. |
+| `capibaraPet.hemisphere` | `auto` | `north` / `south` for the seasons and the moon; `auto` guesses from your time zone. |
 
 > Tip: **click anywhere in the panel** to pet the capybara — it hops with a ❤️.
 > The capybara also **runs faster the faster you type**.
@@ -81,7 +84,17 @@ By default (`time`) the light follows your local clock and changes by itself:
 - **Night**: twinkling stars, the moon's glitter on the lake, shooting stars now and then, and blinking fireflies.
 
 You can also pin one with `scene`, `sunset` or `night`.
+
+The world around it is alive too:
+
+- **Weather** changes by itself every few hours: clear skies, clouds, rain rippling the lake, a storm with lightning behind the hills, morning fog — and in winter, snow with white hills and a frozen lake (no swimming then!).
+- **Seasons** follow your hemisphere: spring blossoms and falling petals, autumn trees and falling leaves, duller winter fields.
+- **The moon** shows tonight's real phase.
+- **Lake visitors**: a duck family crossing the water and a turtle sunning on a log (it dives when it rains, or when the capybara swims by).
+- **Holidays**: pumpkins and bats at Halloween, a Santa hat at Christmas, fireworks on New Year's Eve.
 - **Effects**: a hard pixel shadow, dust puffs when it walks, runs or lands, confetti and sparkles when it celebrates, a "!" when it gets scared, and a pixel heart when you pet it.
+
+Hover the 🦫 status bar item to see the current weather and season.
 
 The pet moves on the same pixel grid as the scenery. With `prefers-reduced-motion`, the scene stays still and the effects are off.
 

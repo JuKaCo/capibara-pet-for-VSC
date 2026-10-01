@@ -39,6 +39,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = 'capibaraPet.view';
   private view?: vscode.WebviewView;
   public onState?: (s: string) => void;
+  public onWorld?: (w: { mode: string; weather: string; season: string; holiday: string }) => void;
 
   constructor(private readonly extensionUri: vscode.Uri) {}
 
@@ -54,6 +55,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     // The webview reports its current mood so the status bar can mirror it.
     view.webview.onDidReceiveMessage((m) => {
       if (m && m.type === 'state' && this.onState) { this.onState(m.s); }
+      if (m && m.type === 'world' && this.onWorld) { this.onWorld(m.w); }
     });
   }
 
@@ -111,6 +113,11 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const name = (cfg.get<string>('name', '') || '').trim();
     const bubbles = cfg.get<boolean>('bubbles', true);
     const bgPref = cfg.get<string>('background', 'time');
+    const world = JSON.stringify({
+      weather: cfg.get<string>('weather', 'auto'),
+      seasons: cfg.get<boolean>('seasons', true),
+      hemisphere: cfg.get<string>('hemisphere', 'auto'),
+    });
     const k = vscode.window.activeColorTheme.kind;
     const isDark = k === vscode.ColorThemeKind.Dark || k === vscode.ColorThemeKind.HighContrast;
     const mode = bgPref === 'auto' ? (isDark ? 'night' : 'scene') : bgPref;
@@ -206,7 +213,8 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   const snap = (v) => Math.round(v / PX) * PX;
   const pix = window.PixelArt.create({
     stage, px: PX, pet: PET, grid: ${SPRITE_GRID}, base: 4, feet: ${FEET},
-    mode: '${sceneMode ? mode : 'none'}', reduced: REDUCED,
+    mode: '${sceneMode ? mode : 'none'}', reduced: REDUCED, ...${world},
+    onWorld: (w) => vscodeApi.postMessage({ type: 'world', w: w }),
   });
 
   let x = 20, dir = 1;
@@ -429,7 +437,7 @@ export function activate(context: vscode.ExtensionContext) {
   statusBar.command = 'capibaraPet.show';
   context.subscriptions.push(statusBar);
 
-  let lastMood = 'walk';
+  let lastMood = 'walk', worldTip = '';
   const updateStatusBar = (s: string) => {
     lastMood = s;
     const c = vscode.workspace.getConfiguration('capibaraPet');
@@ -439,10 +447,19 @@ export function activate(context: vscode.ExtensionContext) {
     }
     const name = (c.get<string>('name', '') || '').trim();
     statusBar.text = `🦫 ${MOOD[s] || '🚶'}`;
-    statusBar.tooltip = `${name || 'Capibara Pet'} — ${s}`;
+    statusBar.tooltip = `${name || 'Capibara Pet'} — ${s}${worldTip}`;
     statusBar.show();
   };
   provider.onState = updateStatusBar;
+  // The tooltip also tells the weather and season of the pet's little world.
+  provider.onWorld = (w) => {
+    const sky: { [k: string]: string } = { clear: w.mode === 'night' ? '🌙' : '☀️', cloudy: '☁️', rain: '🌧️', storm: '⛈️', fog: '🌫️', snow: '❄️' };
+    const season: { [k: string]: string } = { spring: '🌸', summer: '🌿', autumn: '🍂', winter: '⛄' };
+    const holiday: { [k: string]: string } = { halloween: ' 🎃', christmas: ' 🎄', newyear: ' 🎆' };
+    worldTip = w.mode === 'none' ? '' :
+      ` · ${sky[w.weather] || ''} ${w.weather} · ${season[w.season] || ''} ${w.season}${holiday[w.holiday] || ''}`;
+    updateStatusBar(lastMood);
+  };
   updateStatusBar(lastMood);
 
   context.subscriptions.push(

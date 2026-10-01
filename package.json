@@ -140,6 +140,37 @@
             "No background (blends with the panel)."
           ],
           "markdownDescription": "%config.background.desc%"
+        },
+        "capibaraPet.weather": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "clear", "cloudy", "rain", "storm", "fog", "snow"],
+          "enumDescriptions": [
+            "Changes by itself every few hours: mostly clear, sometimes cloudy, rain, a storm or morning fog — and snow in winter.",
+            "Always clear skies.",
+            "Overcast: more clouds, a greyer sky.",
+            "Rain over the scene and drops rippling the lake.",
+            "Heavy rain with the odd flash of lightning behind the hills.",
+            "Banks of fog drifting over the lake.",
+            "Falling snow, white hills and a frozen lake (no swimming)."
+          ],
+          "markdownDescription": "%config.weather.desc%"
+        },
+        "capibaraPet.seasons": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.seasons.desc%"
+        },
+        "capibaraPet.hemisphere": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "north", "south"],
+          "enumDescriptions": [
+            "Guess it from your time zone.",
+            "Northern hemisphere.",
+            "Southern hemisphere: seasons are flipped and the moon is seen mirrored."
+          ],
+          "markdownDescription": "%config.hemisphere.desc%"
         }
       }
     }

@@ -15,6 +15,11 @@
  *           and what rides on the capybara's head (a little bird, a mandarin)
  * The capybara can also go for a swim: the DOM pet hides and a smaller swimmer
  * (it is farther away, in the lake) is drawn on #scene on the same pixel grid.
+ *
+ * The world follows the local date too: seasons (by hemisphere), holidays, the
+ * real moon phase and the weather (clear, cloudy, rain, storm, fog, snow) tint
+ * the palette and add their own life — falling leaves, rain or snow over the
+ * scene, a frozen lake, ducks and a turtle on a log.
  */
 (function () {
   'use strict';
@@ -165,6 +170,119 @@
     return 'night';
   }
 
+  // ------------------------------------------------------------------- world
+  //
+  // Season, holidays, weather and moon phase come from the local date. The
+  // southern hemisphere (seasons flipped, moon mirrored) is guessed from the
+  // time zone unless set.
+
+  const SOUTH_TZ = new RegExp('^(Australia|Antarctica)/' +
+    '|^Pacific/(Auckland|Chatham|Fiji|Tongatapu|Apia|Noumea|Efate|Tahiti)' +
+    '|^America/(Argentina/|Buenos_Aires|Santiago|Punta_Arenas|La_Paz|Lima|Asuncion|Montevideo|Sao_Paulo' +
+    '|Rio_Branco|Porto_Velho|Cuiaba|Campo_Grande|Manaus|Belem|Fortaleza|Recife|Maceio|Bahia|Araguaina' +
+    '|Santarem|Noronha|Eirunepe)' +
+    '|^Africa/(Johannesburg|Maputo|Harare|Lusaka|Windhoek|Gaborone|Maseru|Mbabane|Lubumbashi|Luanda' +
+    '|Blantyre|Dar_es_Salaam|Kinshasa)' +
+    '|^Indian/(Antananarivo|Mauritius|Reunion|Mayotte|Comoro)|^Asia/(Jakarta|Makassar|Jayapura|Dili)');
+
+  function southern(pref) {
+    if (pref === 'north' || pref === 'south') { return pref === 'south'; }
+    try { return SOUTH_TZ.test(Intl.DateTimeFormat().resolvedOptions().timeZone || ''); }
+    catch (e) { return false; }
+  }
+
+  function seasonAt(d, south) {
+    const m = (d.getMonth() + (south ? 6 : 0)) % 12; // as a northern month
+    return m >= 2 && m <= 4 ? 'spring' : m >= 5 && m <= 7 ? 'summer' : m >= 8 && m <= 10 ? 'autumn' : 'winter';
+  }
+
+  function holidayAt(d) {
+    const m = d.getMonth() + 1, day = d.getDate();
+    if ((m === 10 && day >= 25) || (m === 11 && day === 1)) { return 'halloween'; }
+    if (m === 12 && day >= 20 && day <= 26) { return 'christmas'; }
+    if ((m === 12 && day === 31) || (m === 1 && day === 1)) { return 'newyear'; }
+    return '';
+  }
+
+  const WEATHERS = ['clear', 'cloudy', 'rain', 'storm', 'fog', 'snow'];
+
+  // 'auto': one roll per 4-hour block, the same for the whole block.
+  function weatherAt(d, pref, season) {
+    if (WEATHERS.indexOf(pref) >= 0) { return pref; }
+    const day = Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 864e5);
+    const r = mulberry32(d.getFullYear() * 4000 + day * 8 + Math.floor(d.getHours() / 4));
+    const a = r(), b = r();
+    let w = a < 0.5 ? 'clear' : a < 0.7 ? 'cloudy' : a < 0.84 ? 'rain' : a < 0.9 ? 'storm' : 'fog';
+    if (w === 'fog' && d.getHours() >= 11) { w = 'cloudy'; } // fog lifts by late morning
+    if ((w === 'rain' || w === 'storm') && season === 'winter' && b < 0.5) { w = 'snow'; }
+    return w;
+  }
+
+  // Moon phase 0..1 (0 new, 0.5 full), from a known new moon: 2000-01-06 18:14 UTC.
+  function moonPhase(d) {
+    const days = (d.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 864e5;
+    return (((days / 29.530588853) % 1) + 1) % 1;
+  }
+
+  // Season and weather tint a copy of the time-of-day palette. Tint targets are
+  // darkened at night and warmed at sunset so the light stays consistent.
+  function adjust(base, mode, w) {
+    const p = Object.assign({}, base);
+    if (!base.sky) { return p; }
+    const night = mode === 'night', dusk = mode === 'sunset';
+    const lit = (c) => (night ? mix(c, '#0b1230', 0.62) : dusk ? mix(c, '#7a3f6a', 0.25) : c);
+    const tint = (arr, to, f) => arr.map((c) => mix(c, lit(to), f));
+    if (w.season === 'spring') {
+      p.flowerEvery = base.flowerEvery * 0.5;
+      p.blossom = lit('#ffb7d0');
+      p.falling = [p.blossom, lit('#ffd9e6')];
+    } else if (w.season === 'autumn') {
+      p.leaf = [mix(base.leaf[0], lit('#d0782a'), 0.65), mix(base.leaf[1], lit('#9a4420'), 0.6),
+        mix(base.leaf[2], lit('#f2b443'), 0.65)];
+      p.field = tint(base.field, '#b89a48', 0.25);
+      p.flowerEvery = base.flowerEvery * 2;
+      p.falling = p.leaf;
+    } else if (w.season === 'winter') {
+      p.field = tint(base.field, '#9aa494', 0.25);
+      p.flowerEvery = base.flowerEvery * 3;
+      p.firefly = null;
+    }
+
+    const wx = w.weather, wet = wx === 'rain' || wx === 'storm' || wx === 'snow';
+    const grey = night ? '#151a28' : dusk ? '#6e5a6c' : '#9aa6b0';
+    const over = { cloudy: 0.35, fog: 0.25, rain: 0.55, storm: 0.7, snow: 0.45 }[wx] || 0;
+    if (over) {
+      p.sky = base.sky.map((c) => mix(c, grey, over));
+      p.cloud = base.cloud ? base.cloud.map((c) => mix(c, grey, over * 0.9)) : [mix(grey, '#8090b0', 0.25), grey];
+      p.cloudMore = wx === 'fog' ? 1 : wx === 'cloudy' ? 2.5 : 3;
+      p.far = mix(base.far, grey, over * 0.5);
+    }
+    if (wx === 'cloudy' && base.star) { p.starDensity = base.starDensity * 2; }
+    if (wet) {
+      p.wet = true; p.hideBody = true; p.star = null; p.meteors = false; p.bird = null; p.firefly = null;
+      p.falling = null;
+    }
+    if (wx === 'rain' || wx === 'storm') {
+      p.rain = night ? 'rgba(150,170,220,0.55)' : 'rgba(215,228,242,0.75)';
+      p.storm = wx === 'storm';
+    }
+    if (wx === 'fog') { p.fog = night ? '#3a4466' : dusk ? '#e8b8b0' : '#eef3f5'; }
+    if (wx === 'snow') {
+      const sn = night ? '#8a96b8' : dusk ? '#f0d4dc' : '#f4f8fc';
+      p.snow = night ? '#c8d0e8' : '#ffffff';
+      p.field = p.field.map((c) => mix(c, sn, 0.6));
+      p.near = mix(base.near, sn, 0.55); p.far = mix(p.far, sn, 0.45);
+      p.tuft = mix(base.tuft, sn, 0.35); p.tuftHi = sn;
+      p.path = base.path.map((c) => mix(c, sn, 0.35));
+      p.leaf = p.leaf.map((c) => mix(c, sn, 0.3)); p.snowCap = sn;
+      p.flowerEvery = 1e9;
+      p.water = night ? ['#4a5a80', '#3a4a70', '#2a3a60'] : dusk ? ['#f0d0d8', '#d8b8cc', '#b898b8']
+        : ['#e6f3fa', '#cfe5f2', '#b2d2e8'];
+      p.frozen = true; // no swimming, no ducks, no ripples
+    }
+    return p;
+  }
+
   const CONFETTI = ['#ff5d73', '#ffd23f', '#4dd6ff', '#7cf29a', '#c792ff'];
   const SPARK = ['#fff8d6', '#ffd23f'];
 
@@ -217,6 +335,24 @@
   const ORANGE_S = ['.l.', 'hoo', 'ood'];
   const ORANGE_C = { o: '#f28a1e', h: '#ffd08a', d: '#c4620e', g: '#4a7a2a', l: '#7cc444' };
 
+  // Lake visitors (facing right; the last row sits on the waterline).
+  const DUCK = ['....hh.', '....hek', 'bbbbbb.', '.dddd..'];
+  const DUCK_C = { h: '#7a5a3a', e: '#0a0502', k: '#e8902a', b: '#9a7a52', d: '#6a5236' };
+  const DUCKLING = ['..yk', 'yyy.'];
+  const DUCKLING_C = { y: '#f7d148', k: '#e8902a' };
+  const TURTLE = ['.sSs.', 'hsssh'];
+  const TURTLE_C = { s: '#4a7a32', S: '#7aa848', h: '#8a9a4a' };
+
+  // Holidays: a Santa hat (facing right, the tip droops back), pumpkins, bats.
+  const HAT = ['w.....', 'wrr...', '.rrrr.', 'rrrrrr', 'wwwwww'];
+  const HAT_S = ['w..', 'rr.', 'www'];
+  const HAT_C = { r: '#d8343a', w: '#f4f1ea' };
+  const PUMPKIN = ['..g..', '.ooo.', 'oyoyo', 'oyyyo', '.ooo.'];
+  const BAT = [
+    ['x.....x', 'xx...xx', '.xxxxx.', '...x...'],
+    ['.......', '..xxx..', 'xxxxxxx', 'x..x..x'],
+  ];
+
   const BIRD = [
     ['x...x', '.x.x.', '..x..'], // wings up
     ['.....', '.xxx.', 'x...x'], // wings down
@@ -230,9 +366,21 @@
   function create(o) {
     const PX = o.px, stage = o.stage, anim = !o.reduced;
     const byTime = o.mode === 'time';
-    let mode = byTime ? phaseNow() : PAL[o.mode] ? o.mode : 'none';
-    let P = PAL[mode];
+    const baseMode = () => (byTime ? phaseNow() : PAL[o.mode] ? o.mode : 'none');
+    function worldNow() {
+      const d = new Date(), south = southern(o.hemisphere), seasons = o.seasons !== false;
+      const season = seasons ? seasonAt(d, south) : 'summer';
+      return {
+        season, south, holiday: seasons ? holidayAt(d) : '', day: d.toDateString(),
+        weather: weatherAt(d, o.weather || 'auto', season), moon: moonPhase(d),
+      };
+    }
+    let mode = baseMode(), world = worldNow();
+    let P = adjust(PAL[mode], mode, world);
     const scenic = mode !== 'none';
+    const report = () => {
+      if (o.onWorld) { o.onWorld({ mode, weather: world.weather, season: world.season, holiday: world.holiday }); }
+    };
 
     const sceneCv = layer(1, 1), fxCv = layer(1, 1);
     sceneCv.id = 'scene'; fxCv.id = 'fx';
@@ -250,6 +398,9 @@
     let swimY = 0, swimMin = 0, swimMax = -1, swimmer = null, dripFor = 0;
     let perch = null, orange = 0, orangeWait = 0, lastHead = null;
     const GRID = o.grid || 42;
+    // World life: trees (for falling leaves), weather particles, lake visitors.
+    let trees = [], falling = [], drops = [], flakes = [], fog = null, bolt = null;
+    let ducks = null, log = null, turtleAway = 0, fireworks = [], pumpkins = [];
 
     // Canvas row that contains the given CSS offset from the stage bottom.
     const row = (b) => H - 1 - Math.floor(b / PX);
@@ -281,13 +432,16 @@
     }
 
     function tree(g, x, baseY, cr) {
-      const th = cr + 1;
+      const th = cr + 1, cy = baseY - th - cr + 1;
       dot(g, P.trunk, x, baseY - th, cr > 3 ? 2 : 1, th + 1);
-      disc(g, x, baseY - th - cr + 1, cr, (dx, dy, px, py) => {
+      disc(g, x, cy, cr, (dx, dy, px, py) => {
+        if (P.snowCap && dy < -cr * 0.35 && dith(px, py, 0.8)) { return P.snowCap; }
+        if (P.blossom && (px * 7 + py * 13) % 5 === 0) { return P.blossom; } // spring blossom
         if (dx + dy < -cr * 0.5) { return P.leaf[2]; }
         if (dx + dy > cr * 0.3 && dith(px, py, 0.55)) { return P.leaf[1]; }
         return P.leaf[0];
       });
+      trees.push({ x, y: cy, r: cr });
     }
 
     function drawBody(b) {
@@ -296,13 +450,23 @@
       const cx = Math.round(W * (sunset ? 0.7 : 0.8));
       // The setting sun sits on the horizon, half hidden behind the hills.
       const cy = sunset ? horizon - Math.round(R * 0.4) : Math.max(R + 2, Math.round(horizon * 0.3));
-      body = { cx, cy, R };
+      body = { cx, cy, R, light: 1 };
+      if (P.hideBody) { body = { cx: -99, cy: 0, R: 0, light: 0 }; return; } // behind the rain clouds
       if (P.body === 'moon') {
-        disc(b, cx, cy, R + 2, (dx, dy, x, y) => (dith(x, y, 0.25) ? P.sky[4] : null));
-        disc(b, cx, cy, R, (dx, dy, x, y) => (dx > R * 0.3 && dith(x, y, 0.6) ? P.moon[2] : P.moon[0]));
-        [[-0.4, -0.2], [0.15, 0.35], [-0.1, 0.5]].forEach((c) =>
-          dot(b, P.moon[1], cx + Math.round(c[0] * R), cy + Math.round(c[1] * R)));
-        if (R >= 4) { dot(b, P.moon[1], cx - 1, cy - Math.round(R * 0.55), 2, 1); }
+        // Tonight's phase: lit from the right while waxing (mirrored in the south).
+        const ph = world.moon, k = Math.cos(ph * 2 * Math.PI);
+        body.light = (1 - k) / 2;
+        const isLit = (dx, dy) => {
+          const hw = Math.sqrt(Math.max(0, R * R - dy * dy)) + 0.5, sx = world.south ? -dx : dx;
+          return ph < 0.5 ? sx >= k * hw : sx <= -k * hw;
+        };
+        const shade = mix(P.sky[2], P.moon[2], 0.2); // earthshine: the dark part, barely there
+        if (body.light > 0.3) { disc(b, cx, cy, R + 2, (dx, dy, x, y) => (dith(x, y, 0.25) ? P.sky[4] : null)); }
+        disc(b, cx, cy, R, (dx, dy) => (isLit(dx, dy) ? P.moon[0] : shade));
+        [[-0.4, -0.2], [0.15, 0.35], [-0.1, 0.5]].forEach((c) => {
+          const dx = Math.round(c[0] * R), dy = Math.round(c[1] * R);
+          if (isLit(dx, dy)) { dot(b, P.moon[1], cx + dx, cy + dy); }
+        });
         return;
       }
       disc(b, cx, cy, R + (sunset ? 3 : 2), (dx, dy, x, y) =>
@@ -329,7 +493,7 @@
       // --- sky life: clouds, twinkling stars
       clouds = []; stars = [];
       if (P.cloud) {
-        const n = 2 + Math.floor(W / 70);
+        const n = Math.round((2 + Math.floor(W / 70)) * (P.cloudMore || 1));
         const near = clamp(Math.round(H * 0.03), 2, 4);
         for (let i = 0; i < n; i++) {
           const far = i % 2 === 1, cv = cloudSprite(rs, far ? near - 1 : near);
@@ -363,9 +527,10 @@
         const y = farY(x);
         dot(f, P.far, x, y, 1, horizon - y + 1);
       }
-      const trees = W < 40 ? 0 : 1 + Math.floor(W / 90);
+      trees = [];
+      const treeN = W < 40 ? 0 : 1 + Math.floor(W / 90);
       const cr = clamp(Math.round(H * 0.06), 2, 5);
-      for (let i = 0; i < trees; i++) {
+      for (let i = 0; i < treeN; i++) {
         const tx = Math.floor(rl() * W);
         tree(f, tx, nearY(tx) + 1, cr);
       }
@@ -419,6 +584,48 @@
           flies.push({ bx: rf() * W, by: horizon - 2 + rf() * (pathTop - horizon + 1), p: rf() * 6.283 });
         }
       }
+
+      // Halloween: pumpkins on the grass by the path (their eyes glow at night).
+      pumpkins = [];
+      if (world.holiday === 'halloween') {
+        const colours = { g: P.tuft, o: mix('#e07a1a', P.path[2], mode === 'night' ? 0.45 : 0),
+          y: mode === 'night' ? '#ffd23f' : '#3a2010' };
+        const n = 1 + Math.floor(W / 110);
+        for (let i = 0; i < n; i++) {
+          const x = Math.round(W * (0.15 + 0.7 * (i + 0.5) / n) + (rf() - 0.5) * 10);
+          blit(f, PUMPKIN, colours, x - 2, pathTop - 4);
+          pumpkins.push(x);
+        }
+      }
+      buildWeather(rf);
+    }
+
+    // Rain, snow and fog: particles over the scene, rebuilt with the layers.
+    function buildWeather(r) {
+      drops = []; flakes = []; fog = null; falling = []; bolt = null; fireworks = [];
+      if (P.rain) {
+        const n = Math.min(P.storm ? 1500 : 800, Math.round((W * H) / (P.storm ? 18 : 40))); // capped for big panels
+        for (let i = 0; i < n; i++) { drops.push({ x: r() * W, y: r() * H, v: 1.6 + r() * 0.9 }); }
+      }
+      if (P.snow) {
+        const n = Math.min(900, Math.round((W * H) / 55));
+        for (let i = 0; i < n; i++) {
+          flakes.push({ x: r() * W, y: r() * H, v: 0.15 + r() * 0.2, p: r() * 6.283, big: r() < 0.2 });
+        }
+      }
+      if (P.fog) {
+        // Banks of fog over the hills' feet and the lake, densest at the horizon.
+        const top = Math.max(0, horizon - Math.round(horizon * 0.35)), span = Math.max(2, pathTop - 2 - top);
+        fog = { cv: layer(W + 32, span), top };
+        const g = fog.cv.getContext('2d');
+        for (let y = 0; y < span; y++) {
+          const yy = top + y, near = 1 - Math.min(1, Math.abs(yy - horizon) / (span * 0.6));
+          for (let x = 0; x < W + 32; x++) {
+            const bank = 0.6 + 0.4 * Math.sin(x * 0.08 + yy * 0.3) * Math.sin(x * 0.031 + 1.7);
+            if (dith(x, yy, Math.max(0, near * bank * 0.75))) { dot(g, P.fog, x, y); }
+          }
+        }
+      }
     }
 
     // A lake between the hills and the path — the capybara's natural habitat —
@@ -453,10 +660,10 @@
         const lx = left(y) - 1;
         if (lx >= 0 && lx < W) { dot(f, P.shore, lx, y); }
       }
-      lake = { top, lh };
+      lake = { top, lh, left };
       // Where the swimmer fits: a row in the nearer half, wide enough for its body.
       swimMin = 0; swimMax = -1;
-      if (lh >= 5) {
+      if (lh >= 5 && !P.frozen) {
         swimY = top + Math.round(lh * 0.55);
         for (let x = 0; x + SWIM_W <= W; x++) {
           if (isWater(x, swimY) && isWater(x + SWIM_W - 1, swimY)) {
@@ -486,12 +693,20 @@
         const x = Math.floor(lx0 + lh + rl() * (W - lx0 - lh));
         const y = top + Math.floor(lh * (0.5 + rl() * 0.4));
         const bloom = rl() < 0.35;
-        if (!isWater(x - 1, y) || !isWater(x + 1, y)) { continue; }
+        if (P.frozen || !isWater(x - 1, y) || !isWater(x + 1, y)) { continue; }
         dot(f, P.lily, x - 1, y, 3, 1);
         if (bloom) { dot(f, P.lilyFlower, x, y - 1); }
       }
-      // Shimmer spots for the animated surface.
-      const n = Math.round((W * lh) / 45);
+      // A log where a turtle suns itself (left out of the water mask: no shimmer on it).
+      log = null;
+      const ly = top + Math.round(lh * 0.35), lx = Math.floor(left(ly) + lh + rl() * Math.max(1, W - left(ly) - lh - 12));
+      if (lh >= 5 && isWater(lx, ly) && isWater(lx + 8, ly) && isWater(lx, ly + 1) && isWater(lx + 8, ly + 1)) {
+        blit(f, ['.LLLLLLL.', 'lllllllll'], { L: mix(P.trunk, '#ffffff', 0.18), l: P.trunk }, lx, ly);
+        for (let x = lx; x < lx + 9; x++) { water[ly * W + x] = 0; water[(ly + 1) * W + x] = 0; }
+        log = { x: lx, y: ly };
+      }
+      // Shimmer spots for the animated surface (the ice has none).
+      const n = P.frozen ? 0 : Math.round((W * lh) / 45);
       for (let i = 0; i < n; i++) {
         const x = Math.floor(rl() * W), y = top + Math.floor(rl() * lh);
         const len = 1 + Math.floor(rl() * 3), p = rl() * 6.283, s = 0.05 + rl() * 0.08;
@@ -506,7 +721,8 @@
         sc.drawImage(c.cv, Math.round(c.x), c.y);
         if (anim) { c.x += c.v; if (c.x > W) { c.x = -c.cv.width; } }
       }
-      if (P.bird && !birds && anim && Math.random() < 1 / 500) {
+      const bats = world.holiday === 'halloween' && mode === 'night' && !P.wet;
+      if ((P.bird || bats) && !birds && anim && Math.random() < 1 / 500) {
         const d = Math.random() < 0.5 ? 1 : -1;
         birds = {
           x: d > 0 ? -6 : W + 6, d, n: 1 + Math.floor(Math.random() * 3),
@@ -515,10 +731,10 @@
       }
       if (birds) {
         for (let k = 0; k < birds.n; k++) {
-          const frame = BIRD[(Math.floor(t / 3) + k) % 2];
+          const frame = (bats ? BAT : BIRD)[(Math.floor(t / (bats ? 2 : 3)) + k) % 2];
           const bx = Math.round(birds.x - birds.d * 6 * k) - 2;
           const by = Math.round(birds.y + (k % 2 ? -2 : 2) * Math.ceil(k / 2) + Math.sin(t * 0.2 + k));
-          blit(sc, frame, { x: P.bird }, bx, by);
+          blit(sc, frame, { x: bats ? '#4a3a5a' : P.bird }, bx, by);
         }
         birds.x += birds.d * 0.3;
         if (birds.x < -6 - 6 * birds.n || birds.x > W + 6 + 6 * birds.n) { birds = null; }
@@ -546,15 +762,54 @@
         m.x += m.vx; m.y += 0.5;
         if (--m.life <= 0 || m.y > horizon - 2) { meteor = null; }
       }
+      drawFireworks();
+      drawLightning();
+    }
+
+    // New Year's night: bursts of coloured pixels over the hills.
+    function drawFireworks() {
+      if (world.holiday !== 'newyear' || mode !== 'night' || P.wet || !anim) { return; }
+      if (fireworks.length < 3 && Math.random() < 1 / 70) {
+        fireworks.push({
+          x: Math.round(W * (0.15 + Math.random() * 0.7)), y: Math.round(horizon * (0.15 + Math.random() * 0.35)),
+          c: CONFETTI[Math.floor(Math.random() * CONFETTI.length)], age: 0,
+        });
+      }
+      fireworks = fireworks.filter((fw) => {
+        const r = Math.min(7, fw.age * 0.7), fade = fw.age > 14;
+        for (let i = 0; i < 10; i++) {
+          if (fade && (i + fw.age) % 2) { continue; }
+          const a = (i / 10) * 6.283;
+          dot(sc, i % 3 ? fw.c : '#ffffff', Math.round(fw.x + Math.cos(a) * r), Math.round(fw.y + Math.sin(a) * r * 0.8 + fw.age * 0.15));
+        }
+        return ++fw.age < 20;
+      });
+    }
+
+    // Storms: now and then a jagged bolt behind the hills (and a soft flash).
+    function drawLightning() {
+      if (!P.storm || !anim) { return; }
+      if (!bolt && Math.random() < 1 / 350) {
+        const pts = [];
+        let x = W * (0.15 + Math.random() * 0.7);
+        for (let y = 0; y < horizon * 0.85; y++) { x += Math.random() < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : 0; pts.push(Math.round(x)); }
+        bolt = { pts, life: 7 };
+      }
+      if (bolt) {
+        if (bolt.life > 3 || bolt.life % 2) { bolt.pts.forEach((x, y) => dot(sc, '#fffbe0', x, y)); }
+        if (--bolt.life <= 0) { bolt = null; }
+      }
     }
 
     function drawWater() {
       if (!lake) { return; }
+      drawVisitors();
+      if (P.frozen) { return; }
       for (const s of shimmer) {
         if (Math.sin(t * s.s + s.p) > 0.55) { dot(sc, P.shimmer, s.x, s.y, s.len, 1); }
       }
       // Glittering path of light under the sun / moon, widening towards us.
-      for (let k = 0; k < lake.lh; k += 1) {
+      for (let k = 0; body.light > 0.2 && k < lake.lh; k += 1) {
         if ((k + (t >> 2)) % 2) { continue; }
         const y = lake.top + k, hw = Math.max(1, Math.round(body.R * 0.4)) + (k >> 2);
         const off = (((t >> 3) + k) % 3) - 1;
@@ -579,6 +834,47 @@
         }
         if (anim && ++ripple.age > 16) { ripple = null; }
       }
+      // Raindrops hitting the water: tiny rings popping here and there.
+      if (P.rain && anim && shimmer.length) {
+        for (let i = 0; i < (P.storm ? 4 : 2); i++) {
+          const s = shimmer[Math.floor(Math.random() * shimmer.length)];
+          dot(sc, P.shimmer, s.x - 1, s.y); dot(sc, P.shimmer, s.x + 1, s.y);
+        }
+      }
+    }
+
+    // A duck family crossing the lake now and then, and a turtle sunning on its log.
+    function drawVisitors() {
+      const calmDay = (mode === 'scene' || mode === 'sunset') && !P.frozen && !P.storm;
+      if (!ducks && calmDay && anim && lake.lh >= 5 && Math.random() < 1 / 1500) {
+        const y = lake.top + Math.max(2, Math.round(lake.lh * 0.3));
+        ducks = { x: W + 2, y, dir: -1, n: 1 + Math.floor(Math.random() * 3) };
+      }
+      if (ducks) {
+        const d = ducks;
+        if (anim) {
+          d.x += d.dir * 0.12;
+          if (d.dir < 0 && d.x <= lake.left(d.y) + 3) { d.dir = 1; }
+          if (d.dir > 0 && d.x > W + 8 + d.n * 6) { ducks = null; }
+        }
+        if (ducks) {
+          const x = Math.round(d.x), flip = d.dir < 0;
+          blit(sc, DUCK, DUCK_C, x, d.y - 3, flip);
+          for (let k = 0; k < d.n; k++) {
+            const bob = (t >> 3) % 2 === k % 2 ? 0 : 1;
+            blit(sc, DUCKLING, DUCKLING_C, x - d.dir * (8 + 5 * k), d.y - 1 + bob, flip);
+          }
+          if ((t >> 1) % 3 === 0) { dot(sc, P.shimmer, flip ? x + 7 : x - 1, d.y + 1); }
+        }
+      }
+      if (log) {
+        // Out on sunny, calm days; it slips into the water when it rains or the capybara swims by.
+        const sunny = calmDay && !P.wet;
+        const near = swimmer && Math.abs(swimmer.x + SWIM_W / 2 - (log.x + 4)) < 12;
+        if (near && turtleAway <= 0 && sunny) { ripple = { x: log.x + 4, y: log.y + 2, age: 0 }; turtleAway = 400; }
+        if (turtleAway > 0 && anim) { turtleAway--; }
+        if (sunny && turtleAway <= 0) { blit(sc, TURTLE, TURTLE_C, log.x + 2, log.y - 2); }
+      }
     }
 
     function drawFireflies() {
@@ -594,7 +890,30 @@
       }
     }
 
-    // Hard-edged, pixel ellipse under the feet (replaces the blurry drop-shadow).
+    // Spring petals / autumn leaves drifting down from the trees.
+    function drawFalling() {
+      if (!P.falling || !trees.length) { return; }
+      if (anim && falling.length < 14 && Math.random() < 0.08) {
+        const tr = trees[Math.floor(Math.random() * trees.length)];
+        falling.push({
+          x: tr.x + (Math.random() - 0.5) * tr.r * 2, y: tr.y + (Math.random() - 0.5) * tr.r,
+          p: Math.random() * 6.283, c: P.falling[Math.floor(Math.random() * P.falling.length)],
+          end: horizon + 2 + Math.random() * (pathTop - horizon - 2),
+        });
+      }
+      falling = falling.filter((lf) => {
+        if (anim) { lf.y += 0.12; lf.x += Math.sin(t * 0.1 + lf.p) * 0.2 - 0.03; }
+        dot(sc, lf.c, Math.round(lf.x), Math.round(lf.y));
+        return lf.y < lf.end;
+      });
+    }
+
+    function drawFog() {
+      if (!fog) { return; }
+      const off = anim ? Math.floor(t * 0.05) % 32 : 0;
+      sc.drawImage(fog.cv, -off, fog.top);
+    }
+
     function drawSwimmer() {
       if (!swimmer) { return; }
       const sw = swimmer;
@@ -617,6 +936,7 @@
       }
     }
 
+    // Hard-edged, pixel ellipse under the feet (replaces the blurry drop-shadow).
     function drawShadow(p) {
       if (!p || swimmer) { return; }
       const cx = (p.x + o.pet / 2) / PX, rx = (o.pet * 0.34) / PX, cy = row(o.feet);
@@ -632,11 +952,32 @@
         sc.drawImage(back, 0, 0);
         drawSky();
         sc.drawImage(front, 0, 0);
+        drawFalling();
         drawWater();
         drawSwimmer();
+        drawFog();
         if (P.firefly) { drawFireflies(); }
+        if (bolt && bolt.life > 5) { sc.fillStyle = 'rgba(255,255,240,0.16)'; sc.fillRect(0, 0, W, H); }
       }
       drawShadow(p);
+    }
+
+    // Rain and snow fall in front of everything, the capybara included.
+    function drawPrecip() {
+      for (const d of drops) {
+        if (anim) {
+          d.y += d.v; d.x -= d.v * 0.3;
+          if (d.y > H) { d.y -= H + 2; d.x = Math.random() * (W + 10); }
+        }
+        dot(fc, P.rain, Math.round(d.x), Math.round(d.y), 1, 2);
+      }
+      for (const f of flakes) {
+        if (anim) {
+          f.y += f.v; f.x += Math.sin(t * 0.05 + f.p) * 0.25;
+          if (f.y > H) { f.y = -1; f.x = Math.random() * W; }
+        }
+        dot(fc, P.snow, Math.round(f.x), Math.round(f.y), f.big ? 2 : 1, 1);
+      }
     }
 
     // ---------------------------------------------------------- particles
@@ -757,7 +1098,7 @@
     function updateBird(p, a) {
       const calm = !!a && (!!swimmer || !p.moving || p.state === 'walk');
       if (!perch) {
-        if (calm && anim && mode !== 'night' && !orange && !orangeWait && Math.random() < 1 / 700) {
+        if (calm && anim && mode !== 'night' && !P.wet && !orange && !orangeWait && Math.random() < 1 / 700) {
           const from = Math.random() < 0.5 ? -1 : 1;
           perch = { phase: 'in', x: a.x + from * 40, y: Math.max(1, a.y - 25), face: -from, sit: 0 };
         }
@@ -801,23 +1142,29 @@
       const a = headAnchor(p);
       updateOrange(p, a);
       updateBird(p, a);
-      if (!parts.length && !fxDirty && !perch && !orange) { return; }
+      const hat = world.holiday === 'christmas' && !orange && !!a;
+      const precip = drops.length > 0 || flakes.length > 0;
+      if (!parts.length && !fxDirty && !perch && !orange && !hat && !precip) { return; }
       fc.clearRect(0, 0, W, H);
       if (orange > 0 && a) {
         const bm = a.small ? ORANGE_S : ORANGE;
         blit(fc, bm, ORANGE_C, a.x - (bm[0].length >> 1), a.y - bm.length + 1);
+      } else if (hat) {
+        const bm = a.small ? HAT_S : HAT;
+        blit(fc, bm, HAT_C, a.x - (bm[0].length >> 1), a.y - bm.length + 1, (swimmer ? swimmer.face : p.face) < 0);
       }
       if (perch) {
         const x = Math.round(perch.x), y = Math.round(perch.y);
         if (perch.phase === 'sit') {
-          const lift = orange > 0 && a ? (a.small ? 3 : 5) : 0; // perched on the mandarin
+          const lift = (orange > 0 || hat) && a ? (a.small ? 3 : 5) : 0; // perched on the mandarin / hat
           blit(fc, PERCH, PERCH_C, x - 2, y - 3 - lift, (p && p.face) < 0);
         } else {
           blit(fc, BIRD[(t >> 1) % 2], { x: PERCH_C.b }, x - 2, y - 2);
         }
       }
       parts = parts.filter(stepPart);
-      fxDirty = parts.length > 0 || !!perch || orange > 0;
+      if (precip) { drawPrecip(); }
+      fxDirty = parts.length > 0 || !!perch || orange > 0 || hat || precip;
     }
 
     // Automatic effects driven by the pet's state.
@@ -896,16 +1243,22 @@
       }).observe(stage);
     }
     resize();
+    report();
 
     return {
       // Called once per pet tick with { x, face, state, moving }.
       frame(p) {
         last = p;
-        // 'time' mode: check the clock about once a minute and relight the scene.
-        if (byTime && ++clock >= 850) {
+        // About once a minute: has the time of day, weather, season or date changed?
+        if (++clock >= 850) {
           clock = 0;
-          const m = phaseNow();
-          if (m !== mode) { mode = m; P = PAL[m]; W = H = 0; resize(); }
+          const m = baseMode(), wd = worldNow();
+          if (m !== mode || wd.weather !== world.weather || wd.season !== world.season ||
+              wd.holiday !== world.holiday || wd.day !== world.day) {
+            mode = m; world = wd; P = adjust(PAL[m], m, wd);
+            if (swimmer && P.frozen) { swimmer = null; } // the lake froze over
+            W = H = 0; resize(); report();
+          }
         }
         if (anim) { t++; react(p); }
         drawScene(p);
@@ -923,7 +1276,7 @@
       },
       // Where the pet's left edge (CSS px) may stand to jump into the lake, or null.
       lake() {
-        if (!scenic || swimMax < swimMin) { return null; }
+        if (!scenic || P.frozen || swimMax < swimMin) { return null; }
         return { from: (swimMin + SWIM_W / 2) * PX - o.pet / 2, to: (swimMax + SWIM_W / 2) * PX - o.pet / 2 };
       },
       swimming() { return !!swimmer; },

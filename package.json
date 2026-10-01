@@ -45,6 +45,11 @@
         "category": "%cmd.category%"
       },
       {
+        "command": "capibaraPet.feed",
+        "title": "%cmd.feed.title%",
+        "category": "%cmd.category%"
+      },
+      {
         "command": "capibaraPet.swim",
         "title": "%cmd.swim.title%",
         "category": "%cmd.category%"
@@ -140,6 +145,29 @@
             "No background (blends with the panel)."
           ],
           "markdownDescription": "%config.background.desc%"
+        },
+        "capibaraPet.color": {
+          "type": "string",
+          "default": "classic",
+          "enum": ["classic", "chocolate", "golden", "cream", "ash"],
+          "enumDescriptions": [
+            "The classic warm brown capybara.",
+            "Dark chocolate brown.",
+            "Golden, sandy fur.",
+            "Pale cream, almost white.",
+            "Ash grey."
+          ],
+          "markdownDescription": "%config.color.desc%"
+        },
+        "capibaraPet.baby": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.baby.desc%"
+        },
+        "capibaraPet.sounds": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.sounds.desc%"
         },
         "capibaraPet.weather": {
           "type": "string",

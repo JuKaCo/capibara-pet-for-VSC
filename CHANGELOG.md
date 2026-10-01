@@ -42,6 +42,19 @@ All notable changes to the **Capibara Pet** extension are documented here.
 - **Holidays**: pumpkins (glowing at night) and bats at Halloween, a Santa hat on the
   capybara at Christmas, fireworks on New Year's Eve.
 - The status bar tooltip shows the current weather and season.
+- **Baby capybara** (`capibaraPet.baby`, on by default): a half-size baby that follows
+  its mum — walking behind her, running when she runs, napping by her side, hopping
+  when she celebrates and pressing close when she's scared. When she swims, it rides
+  on her back.
+- **Feed the Capybara** command: a watermelon slice drops in front of it, it hurries
+  over and munches it bite by bite (seeds flying, "nom nom!"); the baby shares from the
+  other side. 🍉 status bar mood.
+- **Fur colours** (`capibaraPet.color`): `classic`, `chocolate`, `golden`, `cream` and
+  `ash` — real palette swaps of the pixel art (also for the swimmer and the baby).
+- **8-bit sounds** (`capibaraPet.sounds`, off by default): petting, the mandarin,
+  eating, splashes, commit/push/test results, the bird's song, ducks and thunder —
+  synthesised on the fly with WebAudio, no audio files. Not on frequent events like
+  saving or typing.
 
 ### Changed
 - Reactions can now carry their own speech bubble text.

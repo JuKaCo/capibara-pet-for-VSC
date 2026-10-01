@@ -14,6 +14,8 @@ import { watchGit, watchTasks } from './reactions';
 //   sleep     sleeps after a long pause (pixel "z"s float up from the stage)
 //   swim      on some breaks it goes for a swim in the lake instead of its coffee
 //             (or on command); any editor activity brings it back out
+//   eat       munches a watermelon slice (the Feed command)
+// Optional: a baby capybara that follows it, fur colour variants, 8-bit sounds.
 // Click the capybara -> it hops and a pixel heart floats up. The animation pauses
 // when the view is hidden, and it respects the user's prefers-reduced-motion setting.
 // The stage (day/night scenery, shadow and particles) is procedural pixel art drawn
@@ -23,6 +25,16 @@ import { watchGit, watchTasks } from './reactions';
 
 // Sprite cells are SPRITE_GRID x SPRITE_GRID pixel art (made with tools/pixelize.py).
 const SPRITE_GRID = 42;
+
+// Fur variants: media/fur/<name>/ holds the recoloured sheets (tools/furs.py);
+// these four tones also colour the swimmer and the baby drawn by pixelart.js.
+const FURS: { [name: string]: { f: string; h: string; s: string; d: string } } = {
+  classic: { f: '#c86e3d', h: '#f08952', s: '#8e4d35', d: '#7c3f2b' },
+  chocolate: { f: '#7a4a32', h: '#9c6648', s: '#553222', d: '#45281c' },
+  golden: { f: '#d9a050', h: '#f4c474', s: '#a87434', d: '#8a5c28' },
+  cream: { f: '#e6d3bc', h: '#fbeedd', s: '#c2ab92', d: '#a88e86' },
+  ash: { f: '#8c8782', h: '#aba6a0', s: '#67635f', d: '#55514d' },
+};
 
 interface SheetCfg { n: number; dur: number; }
 const SHEETS: { [s: string]: SheetCfg } = {
@@ -96,13 +108,16 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const coffeeAfter = Math.round(clamp(cfg.get<number>('coffeeAfterSeconds', 6), 1, 600) * 1000 / TICK);
     const sleepAfter = Math.round(clamp(cfg.get<number>('sleepAfterSeconds', 15), 2, 3600) * 1000 / TICK);
     const states = Object.keys(SHEETS);
+    const furName = FURS[cfg.get<string>('color', 'classic')] ? cfg.get<string>('color', 'classic') : 'classic';
+    const sheet = (s: string) => this.uri(webview, (furName === 'classic' ? '' : `fur/${furName}/`) + s + '_sheet.png');
 
     const classes = states.map((s) => {
       const { n, dur } = SHEETS[s];
-      const url = this.uri(webview, s + '_sheet.png');
-      return `.s-${s}{background-image:url('${url}');background-size:${n * DISP}px ${DISP}px;` +
+      return `.s-${s}{background-image:url('${sheet(s)}');background-size:${n * DISP}px ${DISP}px;` +
         `animation:play${n} ${dur}s steps(${n}) infinite;}`;
-    }).join('\n  ');
+    }).join('\n  ') +
+      // Eating: the first walk frame, standing still (it nibbles by squashing a pixel).
+      `\n  .s-eat{background-image:url('${sheet('walk')}');background-size:${SHEETS.walk.n * DISP}px ${DISP}px;}`;
 
     const sizes = Array.from(new Set(states.map((s) => SHEETS[s].n)));
     const keyframes = sizes.map((n) =>
@@ -113,10 +128,13 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const name = (cfg.get<string>('name', '') || '').trim();
     const bubbles = cfg.get<boolean>('bubbles', true);
     const bgPref = cfg.get<string>('background', 'time');
+    const sounds = cfg.get<boolean>('sounds', false);
     const world = JSON.stringify({
       weather: cfg.get<string>('weather', 'auto'),
       seasons: cfg.get<boolean>('seasons', true),
       hemisphere: cfg.get<string>('hemisphere', 'auto'),
+      baby: cfg.get<boolean>('baby', true),
+      fur: FURS[furName],
     });
     const k = vscode.window.activeColorTheme.kind;
     const isDark = k === vscode.ColorThemeKind.Dark || k === vscode.ColorThemeKind.HighContrast;
@@ -165,6 +183,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   #breath { width:100%; height:100%; transform-origin:bottom center; }
   /* Breathing grows exactly one art pixel, in hard steps (no smooth tweening). */
   #breath.breathing { animation:breathe 3.2s step-end infinite; }
+  #sprite.chew { transform-origin:bottom center; transform:scaleY(${((DISP - PX) / DISP).toFixed(4)}); }
   @keyframes breathe { 0%{transform:scaleY(1);} 50%{transform:scaleY(${((DISP + PX) / DISP).toFixed(4)});} 100%{transform:scaleY(1);} }
   #sprite { width:100%; height:100%; background-repeat:no-repeat; image-rendering:pixelated; }
   /* Pixel speech bubble: square corners notched with box-shadows (8-bit border). */
@@ -194,6 +213,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   <div id="floor"></div>
 </div>
 <script nonce="${nonce}" src="${this.uri(webview, 'pixelart.js')}"></script>
+${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"></script>` : ''}
 <script nonce="${nonce}">
   const MOVE = ${move};
   const TICK = ${TICK};
@@ -203,6 +223,8 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   const BUBBLES = ${bubbles};
   const PETS = ['hi!', 'hee!', '♥'];
   const PX = ${PX};   // art pixel: the pet snaps to this grid, like the scenery
+  const SOUNDS = ${sounds};
+  const sfx = (n) => { if (SOUNDS && window.Chiptune) { window.Chiptune.play(n); } };
 
   const vscodeApi = acquireVsCodeApi();
   const pet = document.getElementById('pet');
@@ -215,6 +237,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     stage, px: PX, pet: PET, grid: ${SPRITE_GRID}, base: 4, feet: ${FEET},
     mode: '${sceneMode ? mode : 'none'}', reduced: REDUCED, ...${world},
     onWorld: (w) => vscodeApi.postMessage({ type: 'world', w: w }),
+    sfx: sfx,
   });
 
   let x = 20, dir = 1;
@@ -227,6 +250,9 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
   let swim = null, rolledSwim = false, shakeFor = 0;
   const clicks = []; // recent clicks, for the mandarin easter egg
 
+  // Feeding: a watermelon slice drops in front of it, it walks over and eats it.
+  let meal = null;
+
   // Idle micro-behaviour (no new sprites): while strolling it occasionally stops
   // for a moment, sometimes looking the other way; it "breathes" while standing.
   let pauseFor = 0, look = 0, walkTimer = randWalk();
@@ -238,7 +264,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 
   function goSwim() {
     const lake = pix.lake();
-    if (!lake || REDUCED || swim || dragging) { return false; }
+    if (!lake || REDUCED || swim || meal || dragging) { return false; }
     // Walk to a spot in front of the water, near where it already is.
     const target = Math.min(lake.to, Math.max(lake.from, x + (Math.random() - 0.5) * PET));
     swim = { phase: 'go', target: target, left: 0 };
@@ -261,11 +287,29 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 
   const inWater = () => !!swim && swim.phase === 'in';
 
+  function goFeed() {
+    leaveWater();
+    stopMeal();
+    const w = stage.clientWidth, cx = x + PET / 2;
+    let side = dir, fx = cx + side * PET * 0.9; // in front of it, or behind if there's no room
+    if (fx < PET * 0.2 || fx > w - PET * 0.2) { side = -side; fx = cx + side * PET * 0.9; }
+    fx = Math.min(w - 8, Math.max(8, fx));
+    pix.dropFood(fx);
+    // Stand with the mouth (col ~36 of 42 facing right) at the slice.
+    const target = side > 0 ? fx - PET * 0.86 : fx - PET * 0.14;
+    meal = { phase: 'wait', side: side, target: Math.min(Math.max(0, w - PET), Math.max(0, target)), t: 0 };
+  }
+
+  function stopMeal() {
+    if (meal) { pix.dropFoodNow(); meal = null; }
+  }
+
   function state() {
     if (celebrateFor > 0) return 'celebrate';
     if (scaredFor > 0) return 'scared';
     if (jumpFor > 0) return 'jump';
     if (runFor > 0) return 'run';
+    if (meal) return meal.phase === 'eat' ? 'eat' : 'walk';
     if (swim) return inWater() ? 'swim' : 'walk';
     if (inactivity > SLEEP_AFTER) return 'sleep';
     if (inactivity > COFFEE_AFTER) return 'coffee';
@@ -279,7 +323,18 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     if (typeRate > 0) { typeRate = Math.max(0, typeRate - 0.12); }
     if (shakeFor > 0) { shakeFor--; }
     const intensity = Math.min(1, typeRate / 8);
-    if (!rolledSwim && !swim && inactivity > COFFEE_AFTER) {
+    if (meal) {
+      if (meal.phase === 'wait' && pix.foodLanded()) { meal.phase = 'go'; }
+      if (meal.phase === 'go') {
+        const d = meal.target - x;
+        if (Math.abs(d) <= 2 || REDUCED) { meal.phase = 'eat'; meal.t = 0; dir = meal.side; }
+        else { dir = d > 0 ? 1 : -1; }
+      } else if (meal.phase === 'eat' && ++meal.t % 12 === 0) {
+        sfx('nom');
+        if (pix.bite()) { meal = null; heart(); bubble('nom nom!'); }
+      }
+    }
+    if (!rolledSwim && !swim && !meal && inactivity > COFFEE_AFTER) {
       rolledSwim = true;
       if (Math.random() < SWIM_CHANCE) { goSwim(); }
     }
@@ -306,7 +361,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 
     // While strolling, take the occasional break (and maybe glance around).
     let standing = false;
-    if (s === 'walk' && !REDUCED && !swim) {
+    if (s === 'walk' && !REDUCED && !swim && !meal) {
       if (pauseFor > 0) { pauseFor--; standing = true; }
       else if (--walkTimer <= 0) {
         pauseFor = randPause(); walkTimer = randWalk(); standing = true;
@@ -315,8 +370,10 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     } else { pauseFor = 0; look = 0; }
     if (look > 0) { look--; }
 
-    let mv = (REDUCED || standing || dragging || inWater()) ? 0 : (MOVE[s] || 0);
+    const waiting = !!meal && meal.phase === 'wait'; // watches the slice fall
+    let mv = (REDUCED || standing || waiting || dragging || inWater()) ? 0 : (MOVE[s] || 0);
     if (s === 'run' && mv > 0) { mv *= (1 + intensity); } // faster the faster you type
+    if (meal && meal.phase === 'go') { mv *= 1.6; } // hurries to the watermelon
     if (mv > 0) {
       const max = Math.max(0, stage.clientWidth - PET);
       x += dir * mv;
@@ -334,6 +391,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     // Breathe while calm and standing (paused stroll or coffee break).
     const calm = (s === 'walk' && standing) || s === 'coffee';
     breath.classList.toggle('breathing', calm && !REDUCED);
+    sprite.classList.toggle('chew', s === 'eat' && !REDUCED && (frameN >> 2) % 2 === 0);
 
     // Scenery, shadow and particles follow the (snapped) pet.
     pix.frame({ x: px, face: face, state: s, moving: mv > 0 });
@@ -373,6 +431,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     while (clicks.length && now - clicks[0] > 3000) { clicks.shift(); }
     const yuzu = clicks.length >= 5;
     if (yuzu) { clicks.length = 0; pix.orange(); }
+    sfx(yuzu ? 'yuzu' : 'pet');
     if (!inWater()) {
       leaveWater(); // cancels a walk to the lake
       if (!yuzu) { jumpFor = 9; } // no hop, so the mandarin lands right away
@@ -406,16 +465,17 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     // Pause/resume the loop when the view is hidden/shown (saves CPU).
     if (m.type === 'pause') { stop(); document.body.classList.add('paused'); return; }
     if (m.type === 'resume') { start(); document.body.classList.remove('paused'); return; }
-    if (m.type === 'swim') { if (!goSwim()) { bubble('?'); } return; }
-    if (m.type !== 'pet') { leaveWater(); } // editor activity: out of the water
+    if (m.type === 'swim') { stopMeal(); if (!goSwim()) { bubble('?'); } return; }
+    if (m.type === 'feed') { goFeed(); return; }
+    if (m.type !== 'pet') { leaveWater(); stopMeal(); } // editor activity: out of the water / meal
     active();
     if (m.type === 'typing') { runFor = 38; typeRate = Math.min(10, typeRate + 1.5); }
-    else if (m.type === 'celebrate') { celebrateFor = 26; bubble(m.text || 'yay!'); }
-    else if (m.type === 'scared') { scaredFor = 24; bubble(m.text || 'uh-oh'); }
+    else if (m.type === 'celebrate') { celebrateFor = 26; bubble(m.text || 'yay!'); if (m.text) { sfx('fanfare'); } }
+    else if (m.type === 'scared') { scaredFor = 24; bubble(m.text || 'uh-oh'); if (m.text) { sfx('oops'); } }
     else if (m.type === 'jump') { jumpFor = 9; if (m.text) { bubble(m.text); } }
     else if (m.type === 'pet') {
       if (!swim) { jumpFor = 9; }
-      heart();
+      heart(); sfx('pet');
       bubble(PETS[Math.floor(Math.random() * PETS.length)]);
     }
   });
@@ -426,7 +486,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 }
 
 const MOOD: { [s: string]: string } = {
-  walk: '🚶', run: '🏃', jump: '🦘', celebrate: '🎉', scared: '😱', coffee: '☕', sleep: '😴', swim: '🏊',
+  walk: '🚶', run: '🏃', jump: '🦘', celebrate: '🎉', scared: '😱', coffee: '☕', sleep: '😴', swim: '🏊', eat: '🍉',
 };
 
 export function activate(context: vscode.ExtensionContext) {
@@ -478,6 +538,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('capibaraPet.swim', async () => {
       await vscode.commands.executeCommand('capibaraPet.view.focus');
       provider.notify('swim');
+    }),
+    vscode.commands.registerCommand('capibaraPet.feed', async () => {
+      await vscode.commands.executeCommand('capibaraPet.view.focus');
+      provider.notify('feed');
     }),
     vscode.commands.registerCommand('capibaraPet.toggle', async () => {
       const c = vscode.workspace.getConfiguration('capibaraPet');

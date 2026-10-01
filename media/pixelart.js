@@ -20,6 +20,9 @@
  * real moon phase and the weather (clear, cloudy, rain, storm, fog, snow) tint
  * the palette and add their own life — falling leaves, rain or snow over the
  * scene, a frozen lake, ducks and a turtle on a log.
+ *
+ * Optional company: a baby capybara that follows its mum around (and rides on
+ * her back when she swims), and a watermelon to feed them.
  */
 (function () {
   'use strict';
@@ -323,7 +326,7 @@
 
   // Top of the head (sprite px, facing right) of the poses that can carry
   // something on it; on the others a mandarin falls off and a bird flies away.
-  const HEAD = { walk: [25.5, 19], coffee: [19, 14], sleep: [25.5, 24] };
+  const HEAD = { walk: [25.5, 19], eat: [25.5, 19], coffee: [19, 14], sleep: [25.5, 24] };
 
   // A little bird (yellow belly, like the ones that ride capybaras), facing right.
   const PERCH = ['..hh.', '.hhek', 'bbyy.', '..f..'];
@@ -334,6 +337,27 @@
   const ORANGE = ['..gl.', '.ooo.', 'ohooo', 'ooood', '.ddd.'];
   const ORANGE_S = ['.l.', 'hoo', 'ood'];
   const ORANGE_C = { o: '#f28a1e', h: '#ffd08a', d: '#c4620e', g: '#4a7a2a', l: '#7cc444' };
+
+  // The baby capybara (half the size of its mum, a bigger head), facing right.
+  const BABY = {
+    walk: [
+      ['.........o.o...', '........ooooo..', '.......ohhffoo.', '..ooooofffofffo', '.ohhfffffffffdo',
+        'offffffffffffo.', 'offfffffffffo..', '.offfffffffo...', '.ofo.oo.ofo....', '.oo..oo..oo....'],
+      ['.........o.o...', '........ooooo..', '.......ohhffoo.', '..ooooofffofffo', '.ohhfffffffffdo',
+        'offffffffffffo.', 'offfffffffffo..', '.offfffffffo...', '..ofoo.ofo.....', '..oo.oo.oo.....'],
+    ],
+    stand: ['.........o.o...', '........ooooo..', '.......ohhffoo.', '..ooooofffofffo', '.ohhfffffffffdo',
+      'offffffffffffo.', 'offfffffffffo..', '.offfffffffo...', '.ofo....ofo....', '.oo.....oo.....'],
+    sleep: ['.........o.o...', '....ooooooooo..', '..oohhhhhhhffo.', '.offfffffffoffo', 'offffffffffffdo',
+      'offffffffffffo.', '.ooooooooooooo.'],
+    // Riding on its swimming mum's back: just a tiny head peeking out.
+    ride: ['.....o.', '...oooo', '.ooffoo', 'offfffo'],
+  };
+  const BABY_W = 15;
+
+  // A slice of watermelon to feed them (eaten from the top down).
+  const MELON = ['...r...', '..rkr..', '.rrrrr.', 'rkrrrkr', 'ggggggg', '.GGGGG.'];
+  const MELON_C = { r: '#ff5a6e', k: '#2a1a14', g: '#8fd16a', G: '#3f8a3a' };
 
   // Lake visitors (facing right; the last row sits on the waterline).
   const DUCK = ['....hh.', '....hek', 'bbbbbb.', '.dddd..'];
@@ -401,6 +425,10 @@
     // World life: trees (for falling leaves), weather particles, lake visitors.
     let trees = [], falling = [], drops = [], flakes = [], fog = null, bolt = null;
     let ducks = null, log = null, turtleAway = 0, fireworks = [], pumpkins = [];
+    // Fur colours (variants swap these four) for the swimmer and the baby.
+    const FUR = Object.assign({}, SWIM_C, o.fur || {});
+    let baby = null, food = null;
+    const sfx = (n) => { if (o.sfx && anim) { o.sfx(n); } };
 
     // Canvas row that contains the given CSS offset from the stage bottom.
     const row = (b) => H - 1 - Math.floor(b / PX);
@@ -794,6 +822,7 @@
         let x = W * (0.15 + Math.random() * 0.7);
         for (let y = 0; y < horizon * 0.85; y++) { x += Math.random() < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : 0; pts.push(Math.round(x)); }
         bolt = { pts, life: 7 };
+        sfx('thunder');
       }
       if (bolt) {
         if (bolt.life > 3 || bolt.life % 2) { bolt.pts.forEach((x, y) => dot(sc, '#fffbe0', x, y)); }
@@ -849,6 +878,7 @@
       if (!ducks && calmDay && anim && lake.lh >= 5 && Math.random() < 1 / 1500) {
         const y = lake.top + Math.max(2, Math.round(lake.lh * 0.3));
         ducks = { x: W + 2, y, dir: -1, n: 1 + Math.floor(Math.random() * 3) };
+        sfx('quack');
       }
       if (ducks) {
         const d = ducks;
@@ -925,7 +955,12 @@
       }
       const bob = anim && (t >> 3) % 2 ? 1 : 0; // bobbing: one pixel under, then up
       const x = Math.round(sw.x);
-      blit(sc, SWIM.slice(0, SWIM.length - bob), SWIM_C, x, swimY - 6 + bob, sw.face < 0);
+      blit(sc, SWIM.slice(0, SWIM.length - bob), FUR, x, swimY - 6 + bob, sw.face < 0);
+      if (baby) { // the baby rides on her back
+        // Sits right above her back line (row 3, columns 1-7 when facing right).
+        const rx = sw.face > 0 ? x + 1 : x + SWIM_W - 1 - BABY.ride[0].length;
+        blit(sc, BABY.ride, FUR, rx, swimY - 7 + bob, sw.face < 0);
+      }
       // Broken waterline along the body and a wake trailing behind it.
       for (let i = 1; i < SWIM_W - 1; i++) {
         if ((i + (t >> 1)) % 3) { dot(sc, P.shimmer, x + i, swimY + 1); }
@@ -937,6 +972,61 @@
     }
 
     // Hard-edged, pixel ellipse under the feet (replaces the blurry drop-shadow).
+    // The baby follows its mum: walks behind her, runs when she runs, naps next to
+    // her, hops when she celebrates and presses close when she gets scared.
+    function updateBaby(p) {
+      if (!o.baby || !p) { baby = null; return; }
+      const mL = p.x / PX, mW = o.pet / PX, foot = row(o.feet);
+      if (!baby) { baby = { x: mL + (p.face > 0 ? 0 : mW - BABY_W), face: p.face, step: 0 }; }
+      const b = baby;
+      if (swimmer) { b.riding = true; return; }
+      if (b.riding) { b.riding = false; b.x = p.face > 0 ? mL : mL + mW - BABY_W; } // hops off her back
+      const rear = p.face > 0 ? mL + mW * 0.14 : mL + mW * 0.86; // the mother's rear end
+      let target = p.face > 0 ? rear - BABY_W + 3 : rear - 3, face = p.face;
+      if (p.state === 'scared') { target += p.face > 0 ? 4 : -4; } // hides right behind her
+      if (p.state === 'eat' && food) { // shares the watermelon, from the other side
+        const fx = food.x;
+        target = fx > mL + mW / 2 ? fx + 5 : fx - BABY_W - 5;
+        face = fx > target ? 1 : -1;
+      }
+      target = clamp(target, 0, W - BABY_W);
+      const d = target - b.x, speed = p.state === 'run' ? 1.8 : 0.8;
+      b.moving = anim && Math.abs(d) > 1 && p.state !== 'sleep';
+      if (b.moving) { b.x += Math.sign(d) * Math.min(Math.abs(d), speed); b.face = Math.sign(d); b.step++; }
+      else { b.face = face; }
+      b.pose = p.state === 'sleep' && !b.moving ? 'sleep' : b.moving ? 'walk' : 'stand';
+      b.hop = p.state === 'celebrate' && anim && (t >> 1) % 4 < 2 ? 2 : 0;
+      b.foot = foot;
+    }
+
+    function drawBaby() {
+      const b = baby;
+      if (!b || b.riding) { return; }
+      const bm = b.pose === 'walk' ? BABY.walk[(b.step >> 2) % 2] : BABY[b.pose];
+      const x = Math.round(b.x), top = b.foot - bm.length + 1 - b.hop;
+      sc.fillStyle = P.shadow;
+      sc.fillRect(x + 1, b.foot, BABY_W - 4, 1);
+      blit(sc, bm, FUR, x, top, b.face < 0);
+    }
+
+    // The watermelon (on #fx, in front of the mouth): falls from the sky, bounces
+    // once, then gets eaten bite by bite.
+    function drawFood() {
+      if (!food) { return; }
+      const f = food, floor = row(o.feet) - MELON.length + 1;
+      if (anim && !f.landed) {
+        f.vy += 0.2; f.y += f.vy;
+        if (f.y >= floor) {
+          f.y = floor;
+          if (f.vy > 1.2) { f.vy = -f.vy * 0.3; } else { f.landed = true; f.vy = 0; }
+          if (!f.thud) { f.thud = true; sfx('thud'); }
+        }
+      }
+      const rows = MELON.slice(Math.min(MELON.length, f.bites));
+      if (f.gone > 0) { if (--f.gone === 0) { food = null; } if (f.gone % 2) { return; } }
+      blit(fc, rows, MELON_C, Math.round(f.x) - 3, Math.round(f.y) + MELON.length - rows.length);
+    }
+
     function drawShadow(p) {
       if (!p || swimmer) { return; }
       const cx = (p.x + o.pet / 2) / PX, rx = (o.pet * 0.34) / PX, cy = row(o.feet);
@@ -960,6 +1050,8 @@
         if (bolt && bolt.life > 5) { sc.fillStyle = 'rgba(255,255,240,0.16)'; sc.fillRect(0, 0, W, H); }
       }
       drawShadow(p);
+      updateBaby(p);
+      drawBaby();
     }
 
     // Rain and snow fall in front of everything, the capybara included.
@@ -1009,6 +1101,7 @@
 
     function splash(x, y) {
       if (!anim) { return; }
+      sfx('splash');
       for (let i = 0; i < 10; i++) {
         add({
           k: 'splash', x: x + rand(-3, 3), y: y - 1, vx: rand(-0.5, 0.5), vy: -rand(0.5, 1.2),
@@ -1112,7 +1205,10 @@
       } else if (perch.phase === 'sit') {
         if (!calm || --perch.sit <= 0) { perch.phase = 'out'; perch.face = Math.random() < 0.5 ? -1 : 1; return; }
         perch.x = a.x; perch.y = a.y;
-        if (Math.random() < 1 / 150) { add({ k: 'note', x: a.x + 2, y: a.y - 6, vy: -0.15, vx: 0.05, life: 14 }); }
+        if (Math.random() < 1 / 150) {
+          add({ k: 'note', x: a.x + 2, y: a.y - 6, vy: -0.15, vx: 0.05, life: 14 });
+          sfx('chirp');
+        }
       } else {
         perch.x += perch.face * 0.8; perch.y -= 0.5;
         if (perch.y < -6 || perch.x < -8 || perch.x > W + 8) { perch = null; }
@@ -1144,8 +1240,9 @@
       updateBird(p, a);
       const hat = world.holiday === 'christmas' && !orange && !!a;
       const precip = drops.length > 0 || flakes.length > 0;
-      if (!parts.length && !fxDirty && !perch && !orange && !hat && !precip) { return; }
+      if (!parts.length && !fxDirty && !perch && !orange && !hat && !precip && !food) { return; }
       fc.clearRect(0, 0, W, H);
+      drawFood();
       if (orange > 0 && a) {
         const bm = a.small ? ORANGE_S : ORANGE;
         blit(fc, bm, ORANGE_C, a.x - (bm[0].length >> 1), a.y - bm.length + 1);
@@ -1164,7 +1261,7 @@
       }
       parts = parts.filter(stepPart);
       if (precip) { drawPrecip(); }
-      fxDirty = parts.length > 0 || !!perch || orange > 0 || hat || precip;
+      fxDirty = parts.length > 0 || !!perch || orange > 0 || hat || precip || !!food;
     }
 
     // Automatic effects driven by the pet's state.
@@ -1304,6 +1401,25 @@
       },
       // Easter egg: a mandarin on the head.
       orange() { orangeWait = 40; },
+      // Feeding: drop a watermelon slice at x (CSS px); eat it bite by bite.
+      dropFood(xCss) {
+        food = { x: clamp(xCss / PX, 4, W - 4), y: Math.max(-8, row(o.feet) - 45), vy: 0, bites: 0, landed: !anim, gone: 0 };
+        if (!anim) { food.y = row(o.feet) - MELON.length + 1; }
+      },
+      foodLanded() { return !!food && food.landed; },
+      bite() {
+        if (!food) { return true; }
+        food.bites++;
+        for (let i = 0; i < 3; i++) { // seeds and juice flying off
+          add({
+            k: 'splash', x: food.x + rand(-2, 2), y: food.y + food.bites, vx: rand(-0.5, 0.5), vy: -rand(0.3, 0.8),
+            g: 0.1, life: 8, c: i ? MELON_C.r : MELON_C.k,
+          });
+        }
+        if (food.bites >= MELON.length - 1) { food.gone = 6; return true; } // only crumbs left
+        return false;
+      },
+      dropFoodNow() { if (food) { food.gone = 6; } }, // abandoned: it fades away
     };
   }
 

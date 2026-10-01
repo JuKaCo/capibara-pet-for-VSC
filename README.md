@@ -27,6 +27,7 @@ The capybara reacts to what you do:
 | ☕ **Coffee** | After a medium pause (~6 s) |
 | 😴 **Sleep** | After a long pause (~15 s) — with its 💤 |
 | 🏊 **Swim** | On some breaks it goes for a swim in the lake instead (or run *Go for a Swim*) — any editor activity brings it back out, dripping |
+| 🍉 **Eat** | Run *Feed the Capybara*: a watermelon slice drops in and it munches it (the baby shares) |
 
 ## Getting started
 
@@ -43,6 +44,7 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Capibara Pet
 | **Capibara Pet: Show the Capybara** | Reveals and focuses the pet's view. |
 | **Capibara Pet: Pet the Capybara** | Give it some love — it hops with a ❤️. |
 | **Capibara Pet: Go for a Swim** | Sends it for a dip in the lake (scenery backgrounds only). |
+| **Capibara Pet: Feed the Capybara** | Drops a slice of watermelon for it to munch. |
 | **Capibara Pet: Show/Hide the Capybara** | Quickly toggle the pet on or off. |
 
 > You can also **drag the capybara** left/right inside the panel with your mouse.
@@ -66,6 +68,9 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | `capibaraPet.bubbles` | `true` | Show small speech bubbles (saving, sleeping, petting…). |
 | `capibaraPet.statusBar` | `true` | Show a status bar item that mirrors the current mood. |
 | `capibaraPet.background` | `time` | Panel backdrop: `time` (follows the local time: day, sunset, night), `scene` (day), `sunset`, `night`, `auto` (day/night by theme), `solid`, or `transparent`. |
+| `capibaraPet.color` | `classic` | Fur colour: `classic`, `chocolate`, `golden`, `cream` or `ash`. |
+| `capibaraPet.baby` | `true` | A baby capybara that follows yours around (and rides on its back when it swims). |
+| `capibaraPet.sounds` | `false` | Tiny 8-bit sound effects (they start after your first click in the panel). |
 | `capibaraPet.weather` | `auto` | Scene weather: `auto` (changes every few hours), or always `clear`, `cloudy`, `rain`, `storm`, `fog` or `snow`. |
 | `capibaraPet.seasons` | `true` | Seasonal touches (blossoms, autumn leaves, winter) and holiday surprises. |
 | `capibaraPet.hemisphere` | `auto` | `north` / `south` for the seasons and the moon; `auto` guesses from your time zone. |
@@ -93,6 +98,8 @@ The world around it is alive too:
 - **Lake visitors**: a duck family crossing the water and a turtle sunning on a log (it dives when it rains, or when the capybara swims by).
 - **Holidays**: pumpkins and bats at Halloween, a Santa hat at Christmas, fireworks on New Year's Eve.
 - **Effects**: a hard pixel shadow, dust puffs when it walks, runs or lands, confetti and sparkles when it celebrates, a "!" when it gets scared, and a pixel heart when you pet it.
+
+And it's not alone: a **baby capybara** follows it everywhere — trotting behind, napping by its side, hopping when it celebrates, hiding behind it when it's scared, and riding on its back when it swims. Pick a fur colour you like (`capibaraPet.color`), and turn on `capibaraPet.sounds` for little 8-bit chirps and splashes.
 
 Hover the 🦫 status bar item to see the current weather and season.
 

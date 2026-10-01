@@ -3,6 +3,8 @@
 [![Version](https://img.shields.io/visual-studio-marketplace/v/JuanCarlosCondori.capibara-pet?label=Marketplace&color=8a2be2)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/JuanCarlosCondori.capibara-pet?color=blue)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet)
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/JuanCarlosCondori.capibara-pet?color=gold)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet&ssr=false#review-details)
+[![Open VSX](https://img.shields.io/open-vsx/v/JuanCarlosCondori/capibara-pet?label=Open%20VSX&color=c160ef)](https://open-vsx.org/extension/JuanCarlosCondori/capibara-pet)
+[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/JuanCarlosCondori/capibara-pet?label=Open%20VSX%20downloads&color=c160ef)](https://open-vsx.org/extension/JuanCarlosCondori/capibara-pet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 A little capybara pet that lives in a panel inside your VS Code editor. It strolls around calmly, runs while you type, gets scared when there are errors, sips its coffee during short breaks, and falls asleep if you leave it alone for a while.
@@ -154,6 +156,8 @@ Search for **"Capibara Pet"** in the Extensions tab of VS Code, or install it fr
 ```
 code --install-extension JuanCarlosCondori.capibara-pet
 ```
+
+Using **Cursor, Windsurf, VSCodium** or another editor based on Open VSX? It's there too: [open-vsx.org/extension/JuanCarlosCondori/capibara-pet](https://open-vsx.org/extension/JuanCarlosCondori/capibara-pet).
 
 ## Notes
 

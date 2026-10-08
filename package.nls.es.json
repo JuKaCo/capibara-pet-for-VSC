@@ -8,6 +8,7 @@
   "cmd.toggle.title": "Mostrar/Ocultar la Capibara",
   "config.title": "Capibara Pet",
   "config.enabled.desc": "Muestra la capibara. Desactívalo para ocultarla sin desinstalar.",
+  "config.pet.desc": "Tu mascota: la `capybara` (capibara, en su humedal junto al lago) o el `condor` andino (planeando sobre el Illimani, con su propio pixel art más fino). Cada una vive en su propio hábitat.",
   "config.size.desc": "Tamaño de la capibara, en píxeles. Los múltiplos de 42 (42, 84, 126) mantienen el pixel art perfectamente nítido.",
   "config.speed.desc": "Multiplicador de velocidad al caminar y correr (`1` = por defecto).",
   "config.coffeeAfterSeconds.desc": "Segundos de inactividad antes de que la capibara tome un café.",

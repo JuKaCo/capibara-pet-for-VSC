@@ -23,6 +23,10 @@
  *
  * Optional company: a baby capybara that follows its mum around (and rides on
  * her back when she swims), and a watermelon to feed them.
+ *
+ * Habitats: 'lake' (the capybara's wetland, above) and 'andes' (the condor's: the
+ * Illimani over La Paz, drawn at a finer grid — relief shaded from a noise height
+ * field, foothills, eroded badlands, the city and a perching rock).
  */
 (function () {
   'use strict';
@@ -80,6 +84,17 @@
     }
   }
 
+  function blitK(ctx, rows, colours, x, y, flip, k) {
+    if (k === 1) { blit(ctx, rows, colours, x, y, flip); return; }
+    for (let j = 0; j < rows.length; j++) {
+      const w = rows[j].length;
+      for (let i = 0; i < w; i++) {
+        const c = colours[rows[j][flip ? w - 1 - i : i]];
+        if (c) { dot(ctx, c, x + i * k, y + j * k, k, k); }
+      }
+    }
+  }
+
   // Vertical gradient across several palette colours, ordered-dithered.
   function ditherBands(ctx, x0, y0, w, h, cols) {
     if (w <= 0 || h <= 0) { return; }
@@ -94,6 +109,48 @@
       }
     }
     ctx.putImageData(img, x0, y0);
+  }
+
+  // Seeded 2-D value noise with fBm and ridged variants (for mountains and rock).
+  function valueNoise(seed) {
+    const hash = (x, y) => {
+      let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(seed, 1013904223)) | 0;
+      h = Math.imul(h ^ (h >>> 13), 1274126177);
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    };
+    const sm = (t) => t * t * (3 - 2 * t);
+    const n = (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), u = sm(x - xi), v = sm(y - yi);
+      const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    };
+    const octaves = (f) => (x, y, oct) => {
+      let sum = 0, amp = 0.5, fr = 1, norm = 0;
+      for (let i = 0; i < (oct || 4); i++) { sum += amp * f(n(x * fr, y * fr)); norm += amp; amp *= 0.5; fr *= 2; }
+      return sum / norm;
+    };
+    n.fbm = octaves((v) => v);
+    n.ridge = octaves((v) => 1 - Math.abs(v * 2 - 1)); // sharp crests: aretes, rock ribs
+    return n;
+  }
+
+  // A shade 0..1 picked from a dark→light palette, ordered-dithered between tones.
+  function tone(arr, v, x, y) {
+    const n = arr.length - 1, f = clamp(v, 0, 1) * n, i = Math.min(n - 1, Math.floor(f));
+    return arr[dith(x, y, f - i) ? i + 1 : i];
+  }
+
+  // Per-pixel painting straight into ImageData (much faster than fillRect per pixel).
+  function painter(ctx, w, h, keep) {
+    const img = keep ? ctx.getImageData(0, 0, w, h) : ctx.createImageData(w, h), d = img.data, cache = {};
+    return {
+      put(x, y, c) {
+        if (x < 0 || y < 0 || x >= w || y >= h) { return; }
+        const v = cache[c] || (cache[c] = rgb(c)), k = (y * w + x) * 4;
+        d[k] = v[0]; d[k + 1] = v[1]; d[k + 2] = v[2]; d[k + 3] = 255;
+      },
+      done() { ctx.putImageData(img, 0, 0); },
+    };
   }
 
   // ----------------------------------------------------------------- palettes
@@ -163,6 +220,92 @@
       dust: ['rgba(170,170,170,0.75)', 'rgba(130,130,130,0.6)'], ink: '#8a94a6',
       shadow: 'rgba(0,0,0,0.25)',
     },
+  };
+
+  // The condor's habitat: the Illimani over La Paz. Tone ramps are dark → light.
+  // `light` is how much the scene is lit from the left (sun / moon); at sunset the
+  // light comes from behind the viewer (the Illimani glows, no sun disc).
+  const ANDES_COMMON = {
+    leaf: ['#5a6a3a', '#43502c', '#7a8a4a'], trunk: '#5a4030', flowers: ['#e86a8a', '#f2d06a'],
+    flowerEvery: 1e9, water: ['#cdeaf8', '#8fcaf0', '#5b9fdc'], shore: '#9a8a6a', reed: '#5a6a3a',
+    cattail: '#5a3a2a', lily: '#4f9a3a', lilyFlower: '#ff9ac0', shimmer: '#ffffff', glitter: '#fff6c2',
+  };
+  const ANDES = {
+    scene: Object.assign({}, ANDES_COMMON, {
+      body: 'sun', light: 1,
+      sky: ['#1b4b98', '#275fb0', '#3874c2', '#538dcf', '#79a8da'],
+      sun: ['#fff6c2', '#ffe27a', '#ffc24d'],
+      cloud: ['#ffffff', '#c9d6e6'],
+      ice: ['#5f7199', '#8597bc', '#b3c2dc', '#dde6f3', '#ffffff'],
+      rock: ['#2e3346', '#444a60', '#5d647b', '#7a8197'],
+      far: '#8fa7cc', distant: ['#6f86ad', '#97abc9', '#e3ebf6'],
+      hillFar: ['#47434e', '#5b5560', '#726a72', '#8a8085'],
+      hill: ['#3b2e28', '#55433a', '#73584a', '#937262'],
+      badland: ['#6b4430', '#8f5c3e', '#b77a52', '#d69a6a'],
+      city: ['#9c4a32', '#b5583b', '#c7714d', '#dccfba', '#8d969f', '#5e4638'],
+      lights: ['#ffd27a', '#ffb04a', '#fff0c0'],
+      field: ['#a8925e', '#8f7a4c', '#76643e'], path: ['#b49a64', '#9c8452', '#836c42'],
+      tuft: '#86682a', tuftHi: '#e3c466', rockFg: ['#3a3431', '#57504a', '#776e66', '#9a8f84'],
+      near: '#73584a', bird: '#2e2a2e', ink: '#2f3b52',
+      dust: ['#d8c49a', '#bfa77c'], shadow: 'rgba(40,30,20,0.32)',
+    }),
+    sunset: Object.assign({}, ANDES_COMMON, {
+      body: 'alpenglow', light: 0.35,
+      sky: ['#2c2448', '#5a3a5e', '#9a5a62', '#d88a62', '#f2b878'],
+      cloud: ['#e88a6a', '#ffc08a'],
+      star: ['#5a4a8a', '#a898d8', '#fff0f0'], starSky: 0.35, starDensity: 90,
+      ice: ['#8a5a6e', '#c27a74', '#e8a080', '#f8c8a0', '#fff0d8'],
+      rock: ['#4a3036', '#6a4440', '#8c5e4c', '#b07a58'],
+      far: '#c48a78', distant: ['#8a5a6e', '#c48a78', '#f8c8a0'],
+      hillFar: ['#5a3a34', '#7a5240', '#9c6a4c', '#c08a5a'],
+      hill: ['#4a2e22', '#74482e', '#a8683c', '#d89650'],
+      badland: ['#6a3a24', '#9c5a30', '#d0843e', '#f0b060'],
+      city: ['#7a3a2a', '#a85434', '#c8744a', '#ecd0a8', '#9a7a6a', '#4a2e26'],
+      lights: ['#ffd27a', '#ffb04a', '#fff0c0'],
+      field: ['#c09a58', '#a07e46', '#7e6236'], path: ['#c8a060', '#a8844c', '#86683a'],
+      tuft: '#7a5a24', tuftHi: '#f4c860', rockFg: ['#3a2a28', '#5a403a', '#80604e', '#a8826a'],
+      near: '#a8683c', bird: '#2e1c38', ink: '#2e1c38',
+      dust: ['#e8bf90', '#c69a70'], shadow: 'rgba(60,20,40,0.35)',
+    }),
+    // Dawn: from La Paz the sun rises behind the Illimani — the massif stands dark against
+    // a golden sky, its crest rimmed with light.
+    dawn: Object.assign({}, ANDES_COMMON, {
+      body: 'sunrise', light: 0.15, rim: '#ffe6a0',
+      sky: ['#2a2c58', '#5a4a7a', '#b4707a', '#f0a878', '#ffd89a'],
+      sun: ['#fff8d8', '#ffe08a', '#ffb050'],
+      cloud: ['#c8889a', '#ffd0a0'],
+      star: ['#4a4a7a', '#8a88c0', '#e8e0ff'], starSky: 0.3, starDensity: 120,
+      ice: ['#2e2a4a', '#3e3860', '#524a74', '#6a5e88', '#8a7aa0'],
+      rock: ['#1e1a2e', '#2a2440', '#363050', '#443c60'],
+      far: '#7a6a8a', distant: ['#4a4060', '#7a6a8a', '#c8a8a8'],
+      hillFar: ['#3a3040', '#4a3c4c', '#5c4a58', '#705a64'],
+      hill: ['#2a1e1e', '#3a2a26', '#4e3830', '#644a3c'],
+      badland: ['#4a2e26', '#64402e', '#86583a', '#a8744a'],
+      city: ['#5a3a30', '#6e4636', '#84563e', '#c8a888', '#7a6a6a', '#2e2020'],
+      lights: ['#ffd27a', '#ffb04a', '#fff0c0'],
+      field: ['#8a7a58', '#706448', '#5a503a'], path: ['#94805a', '#7a6a4a', '#62543c'],
+      tuft: '#5a4a24', tuftHi: '#e8c070', rockFg: ['#262024', '#3a3236', '#544a4a', '#706460'],
+      near: '#4e3830', bird: '#2e1c38', ink: '#2e1c38',
+      dust: ['#c8a888', '#a88a6a'], shadow: 'rgba(30,20,40,0.35)',
+    }),
+    night: Object.assign({}, ANDES_COMMON, {
+      body: 'moon', light: 0.6,
+      sky: ['#050816', '#0a1128', '#0f1a3c', '#16244e', '#1e2e5e'],
+      moon: ['#f6f2d4', '#d8d2a4', '#bdb68a'],
+      star: ['#5a6aa0', '#aab8e8', '#ffffff'], starSky: 1, starDensity: 20, meteors: true,
+      ice: ['#283456', '#3a4a72', '#586a96', '#8294be', '#b2c2e2'],
+      rock: ['#121828', '#1a2236', '#242d46', '#303a56'],
+      far: '#2a3658', distant: ['#1a2236', '#2a3658', '#8294be'],
+      hillFar: ['#131724', '#191e2e', '#202638', '#272e44'],
+      hill: ['#0f0e16', '#16141e', '#1e1a27', '#272131'],
+      badland: ['#19131f', '#231829', '#2d1f33', '#38293f'],
+      city: ['#1c1820', '#241e28', '#2a2430', '#34303c', '#221c26', '#141218'],
+      lights: ['#ffd27a', '#ffb04a', '#fff0c0', '#ff8a3a'],
+      field: ['#2a2a30', '#22222a', '#1c1c24'], path: ['#2e2a2a', '#262222', '#1e1a1a'],
+      tuft: '#1a1814', tuftHi: '#4a4430', rockFg: ['#0e0e14', '#16161e', '#20202a', '#2c2c38'],
+      near: '#1e1a27', bird: '#2a2a3a', ink: '#dfe6ff',
+      dust: ['#4a4652', '#3a3642'], shadow: 'rgba(0,0,0,0.4)',
+    }),
   };
 
   // Local time -> palette. Dawn (6-7 h) reuses the warm sunset light.
@@ -282,6 +425,9 @@
       p.water = night ? ['#4a5a80', '#3a4a70', '#2a3a60'] : dusk ? ['#f0d0d8', '#d8b8cc', '#b898b8']
         : ['#e6f3fa', '#cfe5f2', '#b2d2e8'];
       p.frozen = true; // no swimming, no ducks, no ripples
+      ['hill', 'hillFar', 'badland', 'rockFg'].forEach((k) => {
+        if (base[k]) { p[k] = base[k].map((c, i) => mix(c, sn, 0.25 + 0.1 * i)); }
+      });
     }
     return p;
   }
@@ -337,6 +483,9 @@
   const ORANGE = ['..gl.', '.ooo.', 'ohooo', 'ooood', '.ddd.'];
   const ORANGE_S = ['.l.', 'hoo', 'ood'];
   const ORANGE_C = { o: '#f28a1e', h: '#ffd08a', d: '#c4620e', g: '#4a7a2a', l: '#7cc444' };
+  // An Andean chullo (knitted hat with ear flaps and a pompom) for the condor.
+  const CHULLO = ['...p...', '..rrr..', '.ryyyr.', 'rbrbrbr', 'rrrrrrr', 'b.....b', 'y.....y'];
+  const CHULLO_C = { p: '#f2f2f2', r: '#d8343a', y: '#f2c230', b: '#2a6ad8' };
 
   // The baby capybara (half the size of its mum, a bigger head), facing right.
   const BABY = {
@@ -397,10 +546,15 @@
       return {
         season, south, holiday: seasons ? holidayAt(d) : '', day: d.toDateString(),
         weather: weatherAt(d, o.weather || 'auto', season), moon: moonPhase(d),
+        dawn: byTime && d.getHours() < 12, // the 'sunset' light in the morning is dawn
       };
     }
     let mode = baseMode(), world = worldNow();
-    let P = adjust(PAL[mode], mode, world);
+    const habitat = o.habitat === 'andes' ? 'andes' : 'lake';
+    const TABLE = habitat === 'andes' ? Object.assign({}, ANDES, { none: PAL.none }) : PAL;
+    const palFor = (m, w) => (m === 'sunset' && w.dawn && TABLE.dawn ? TABLE.dawn : TABLE[m]);
+    let P = adjust(palFor(mode, world), mode, world);
+    let perchSpot = null, cityLights = [];
     const scenic = mode !== 'none';
     const report = () => {
       if (o.onWorld) { o.onWorld({ mode, weather: world.weather, season: world.season, holiday: world.holiday }); }
@@ -422,6 +576,9 @@
     let swimY = 0, swimMin = 0, swimMax = -1, swimmer = null, dripFor = 0;
     let perch = null, orange = 0, orangeWait = 0, lastHead = null;
     const GRID = o.grid || 42;
+    const condor = o.kind === 'condor';
+    const HK = GRID >= 84 ? 2 : 1; // hats drawn at 2× on the finer grid
+    const baseOf = (p) => (p && p.bottom !== undefined ? p.bottom : o.base); // the condor flies
     // World life: trees (for falling leaves), weather particles, lake visitors.
     let trees = [], falling = [], drops = [], flakes = [], fog = null, bolt = null;
     let ducks = null, log = null, turtleAway = 0, fireworks = [], pumpkins = [];
@@ -475,11 +632,12 @@
     function drawBody(b) {
       const sunset = P.body === 'sunset';
       const R = sunset ? clamp(Math.round(H * 0.1), 3, 8) : clamp(Math.round(H * 0.07), 2, 6);
-      const cx = Math.round(W * (sunset ? 0.7 : 0.8));
+      const andes = habitat === 'andes';
+      const cx = Math.round(W * (andes ? 0.12 : sunset ? 0.7 : 0.8));
       // The setting sun sits on the horizon, half hidden behind the hills.
-      const cy = sunset ? horizon - Math.round(R * 0.4) : Math.max(R + 2, Math.round(horizon * 0.3));
+      const cy = sunset ? horizon - Math.round(R * 0.4) : Math.max(R + 2, Math.round(horizon * (andes ? 0.2 : 0.3)));
       body = { cx, cy, R, light: 1 };
-      if (P.hideBody) { body = { cx: -99, cy: 0, R: 0, light: 0 }; return; } // behind the rain clouds
+      if (P.hideBody || P.body === 'alpenglow' || P.body === 'sunrise') { body = { cx: -99, cy: 0, R: 0, light: 0 }; return; } // rain clouds / sun behind us or behind the mountain
       if (P.body === 'moon') {
         // Tonight's phase: lit from the right while waxing (mirrored in the south).
         const ph = world.moon, k = Math.cos(ph * 2 * Math.PI);
@@ -507,6 +665,7 @@
     }
 
     function build() {
+      if (habitat === 'andes') { buildAndes(); return; }
       // Separate seeded streams: the landscape is identical at every time of day.
       const rl = mulberry32(0x5eed1), rs = mulberry32(0x5eed2), rf = mulberry32(0x5eed3);
       pathTop = clamp(row(o.feet) - 2, 3, H - 2);
@@ -626,6 +785,294 @@
         }
       }
       buildWeather(rf);
+    }
+
+    // ------------------------------------------------------------ andes
+
+    // A thin, wispy cirrus streak (high-altitude skies are full of them).
+    function cirrusSprite(r, w) {
+      const cv = layer(w, 4), g = cv.getContext('2d');
+      for (let x = 0; x < w; x++) {
+        const k = Math.sin((x / w) * Math.PI), th = k * 3.2;
+        for (let y = 0; y < 4; y++) {
+          const d = Math.abs(y - 1.6 - Math.sin(x * 0.07 + r() * 0.2) * 0.6);
+          if (d < th * 0.5 && dith(x, y, 0.35 + k * 0.6)) { dot(g, P.cloud[d < 0.7 ? 0 : 1], x, y); }
+        }
+      }
+      return cv;
+    }
+
+    // A cumulus with volume: overlapping puffs, lit on top, shaded underneath.
+    function cumulusSprite(r, s) {
+      const n = 4 + Math.floor(r() * 4), puffs = [];
+      let x = s;
+      for (let i = 0; i < n; i++) {
+        const mid = 1 - Math.abs(i / (n - 1) - 0.5) * 1.4; // taller in the middle
+        const rad = Math.max(2, Math.round(s * (0.55 + mid * 0.6 + r() * 0.3)));
+        puffs.push({ x, rad }); x += Math.max(2, Math.round(rad * (0.9 + r() * 0.4)));
+      }
+      const maxR = Math.max.apply(null, puffs.map((q) => q.rad));
+      const w = x + maxR + 1, base = maxR * 2, h = base + 1;
+      const cv = layer(w, h), g = cv.getContext('2d');
+      const ramp = [P.cloud[1], mix(P.cloud[1], P.cloud[0], 0.5), P.cloud[0]];
+      for (const q of puffs) {
+        const cy = base - q.rad + Math.round(q.rad * 0.15);
+        disc(g, q.x, cy, q.rad, (dx, dy, px, py) => {
+          if (py > base) { return null; }
+          const v = 1 - (py - (base - maxR * 2)) / (maxR * 2) * 0.9 - (dx > 0 ? 0.08 : 0);
+          return tone(ramp, py >= base - 1 ? 0 : v, px, py);
+        });
+      }
+      return cv;
+    }
+
+    function buildAndes() {
+      const rs = mulberry32(0xa11e2), rf = mulberry32(0xa11e3);
+      const N = valueNoise(7), N2 = valueNoise(11);
+      water = null; lake = null; shimmer = []; swimMin = 0; swimMax = -1; log = null;
+      pumpkins = []; trees = []; flies = []; cityLights = [];
+      pathTop = clamp(row(o.feet) - 2, 3, H - 2);
+      const fgTop = clamp(pathTop - Math.round(H * 0.08), 2, pathTop);
+      horizon = clamp(Math.round(H * 0.6), 2, fgTop - 2);
+      const L = P.light;
+
+      // --- back: sky, sun / moon, distant ranges and the Illimani
+      back = layer(W, H);
+      const b = back.getContext('2d');
+      ditherBands(b, 0, 0, W, horizon + 1, P.sky);
+      drawBody(b);
+      const bp = painter(b, W, H, true);
+
+      // Distant snowy cordillera to the left, faint far peaks to the right.
+      const ridgeLine = (x, amp, f, seed) => horizon - Math.round(amp * (0.35 + 0.65 * N.fbm(x * f, seed, 3)));
+      for (let x = 0; x < W; x++) {
+        const u = x / W;
+        const amp = H * (u < 0.35 ? 0.12 * (1 - u / 0.35) + 0.03 : u > 0.82 ? 0.05 : 0.025);
+        const t = ridgeLine(x, amp, 0.03, 21);
+        for (let y = t; y <= horizon + 2; y++) {
+          const d = y - t, cap = d < amp * 0.35 * (0.6 + 0.8 * N(x * 0.1, 3));
+          bp.put(x, y, cap ? P.distant[2] : dith(x, y, 0.5 + (N(x * 0.2, y * 0.2) - 0.5)) ? P.distant[1] : P.distant[0]);
+        }
+      }
+
+      // The Illimani: a three-summit massif (pointed left peak with bare rock, two
+      // rounded summits, a long ridge falling to the right), relief from noise.
+      const mH = Math.round(H * 0.5), mW = Math.min(Math.round(W * 0.92), Math.round(mH * 3.3));
+      const mx0 = Math.round(W * 0.56 - mW / 2);
+      const PROF = [[0, 0.06], [0.07, 0.2], [0.16, 0.38], [0.27, 0.72], [0.335, 0.93], [0.355, 1],
+        [0.375, 0.93], [0.42, 0.85], [0.47, 0.88], [0.53, 0.95], [0.6, 0.9], [0.67, 0.96], [0.75, 0.84],
+        [0.82, 0.71], [0.87, 0.66], [0.93, 0.44], [1, 0.08]];
+      const prof = (u) => {
+        let i = 0;
+        while (i < PROF.length - 2 && PROF[i + 1][0] < u) { i++; }
+        const [u0, v0] = PROF[i], [u1, v1] = PROF[i + 1], t = clamp((u - u0) / (u1 - u0), 0, 1);
+        return v0 + (v1 - v0) * (1 - Math.cos(t * Math.PI)) / 2;
+      };
+      const crest = (x) => {
+        const u = (x - mx0) / mW;
+        return u < 0 || u > 1 ? null : base(u, x);
+      };
+      function base(u, x) { return Math.round(horizon - prof(u) * mH - (N.fbm(x * 0.15, 3.1, 3) - 0.5) * mH * 0.05); }
+      if (P.body === 'sunrise' && !P.hideBody) { // the sun peeking over the Illimani's right summit
+        const sx = Math.round(mx0 + mW * 0.62), R = clamp(Math.round(H * 0.07), 3, 9);
+        const sy = crest(sx) - Math.round(R * 0.35);
+        for (let dy = -R - 4; dy <= R + 4; dy++) {
+          for (let dx = -R - 4; dx <= R + 4; dx++) {
+            const d2 = dx * dx + dy * dy, x = sx + dx, y = sy + dy;
+            if (d2 <= R * R + R * 0.6) { bp.put(x, y, dx + dy < -R * 0.5 ? P.sun[0] : P.sun[1]); }
+            else if (d2 <= (R + 4) * (R + 4) && dith(x, y, 0.35)) { bp.put(x, y, P.sun[0]); }
+          }
+        }
+        body = { cx: sx, cy: sy, R, light: 1 };
+      }
+      const yEnd = horizon + Math.round(H * 0.08);
+      const hazed = (arr, k) => arr.map((c) => mix(c, P.far, k));
+      const ICE = [P.ice, hazed(P.ice, 0.3), hazed(P.ice, 0.6)], ROCK = [P.rock, hazed(P.rock, 0.3), hazed(P.rock, 0.6)];
+      for (let x = Math.max(0, mx0); x < Math.min(W, mx0 + mW); x++) {
+        const t = crest(x), u = (x - mx0) / mW;
+        const slant = 0.8 * Math.cos(u * Math.PI); // aretes run down-left, then down-right
+        const dR = clamp((prof(u + 0.01) - prof(u - 0.01)) / 0.02 * 0.22, -1, 1);
+        for (let y = t; y <= yEnd; y++) {
+          const d = y - t;
+          const rib = (xx) => N.ridge((xx + d * slant) * 0.1, d * 0.03 + 3.7, 3);
+          const r0 = rib(x), dr = rib(x + 1) - rib(x - 1);
+          let v = 0.6 - dr * 3.2 * L + dR * 0.3 * L - (d / mH) * 0.3 + (N2(x * 0.3, y * 0.3) - 0.5) * 0.14;
+          // Ice down to ~a third of the face, glacier tongues further down the gullies.
+          const snowLine = mH * (0.16 + 0.2 * N.fbm(x * 0.025, 9.1, 3)) + Math.pow(1 - r0, 1.5) * mH * 0.5;
+          const summitRock = Math.abs(u - 0.355) < 0.025 && d < mH * 0.1 && N2(x * 0.5, y * 0.5) > 0.4;
+          const rockRib = r0 > 0.74 && d > mH * 0.06 && N2(x * 0.15 + 5, y * 0.12) > 0.45;
+          const rock = d > snowLine || summitRock || rockRib;
+          // Its feet fade into the haze, in steps (with a little noise on the edges).
+          const hz = clamp((d / mH - 0.45) / 0.45 + (N2(x * 0.08, y * 0.08) - 0.5) * 0.3, 0, 0.999);
+          const lv = Math.floor(hz * 3);
+          let c = rock ? tone(ROCK[lv], v * 0.95, x, y) : tone(ICE[lv], v + 0.12, x, y);
+          if (P.rim && d <= 1 && (d === 0 || dith(x, y, 0.5))) { c = P.rim; } // backlit crest
+          bp.put(x, y, c);
+        }
+      }
+      bp.done();
+
+      // Sky life: cumulus catching on the mountain, cirrus streaks up high, stars.
+      clouds = []; stars = [];
+      if (P.cloud) {
+        const n = Math.round((1 + Math.floor(W / 160)) * (P.cloudMore || 1));
+        const sz = clamp(Math.round(H * 0.03), 2, 7);
+        for (let i = 0; i < n; i++) {
+          const cv = cumulusSprite(rs, i % 2 ? sz - 1 : sz);
+          clouds.push({
+            cv, x: rs() * (W + cv.width) - cv.width, v: 0.02 + rs() * 0.02,
+            y: Math.round(horizon - mH * (0.25 + rs() * 0.45)),
+          });
+        }
+        const m = Math.round((2 + Math.floor(W / 120)) * (P.cloudMore || 1));
+        for (let i = 0; i < m; i++) {
+          const cv = cirrusSprite(rs, Math.round(W * (0.12 + rs() * 0.25)));
+          clouds.push({ cv, x: rs() * (W + cv.width) - cv.width, v: 0.03 + rs() * 0.03, y: Math.round(rs() * horizon * 0.35) });
+        }
+      }
+      if (P.star) {
+        const skyH = Math.max(2, Math.round(horizon * P.starSky));
+        const n = Math.round((W * skyH) / P.starDensity);
+        for (let i = 0; i < n; i++) {
+          const x = Math.floor(rs() * W), y = Math.floor(rs() * Math.max(1, skyH - 2));
+          const c = crest(x);
+          if ((c !== null && y >= c) || (Math.abs(x - body.cx) < body.R + 3 && Math.abs(y - body.cy) < body.R + 3)) { continue; }
+          stars.push({ x, y, p: rs() * 6.283, s: 0.04 + rs() * 0.12, big: rs() < 0.12 });
+        }
+      }
+
+      // --- front: foothills, badlands, the city, the altiplano and the rock
+      front = layer(W, H);
+      const f = front.getContext('2d');
+      const fp = painter(f, W, H, false);
+      // Relief from a height field lit from the upper left (lumps, ravines, eroded ribs).
+      const relief = (x, y, f, seed, k, stretch) => {
+        const h = (xx, yy) => N.fbm(xx * f, yy * f * stretch + seed, 4) * 0.65 + N.ridge(xx * f * 2.3, yy * f * stretch * 1.3 + seed * 2, 3) * 0.35;
+        return -(h(x + 1, y) - h(x - 1, y)) * k * L - (h(x, y + 1) - h(x, y - 1)) * k * 0.45;
+      };
+      // Two ranges of brown foothills with ridged crests.
+      const farTop = (x) => horizon + Math.round(H * 0.03) - Math.round(H * (0.05 + 0.13 * N.ridge(x * 0.005, 31, 3) + 0.02 * N.fbm(x * 0.05, 33, 2)));
+      // The dark pointed hill in front of the Illimani's right flank, and rolling slopes.
+      const hx = W * 0.64, hw = Math.max(30, W * 0.2);
+      const nearTop = (x) => {
+        const tri = Math.max(0, 1 - Math.abs(x - hx) / hw);
+        const roll = 0.03 + 0.12 * N.ridge(x * 0.007, 41, 3);
+        return horizon + Math.round(H * 0.15) - Math.round(H * Math.max(tri * tri * 0.22 + tri * 0.05, roll) + (N.fbm(x * 0.06, 43, 2) - 0.5) * H * 0.02);
+      };
+      const cityTop = Math.round(horizon + (fgTop - horizon) * 0.4);
+      // Eroded badlands (like the Valle de la Luna): one or two clusters of chunky pinnacles.
+      // La Paz always has its district (around 40 % of the width); the badlands recede there.
+      const district = (x) => clamp(1 - Math.abs(x - W * 0.4) / (W * 0.16), 0, 1);
+      const badEnv = (x) => clamp((N.fbm(x * 0.004, 51, 2) - 0.5) * 6, 0, 1) * (1 - Math.min(1, district(x) * 1.6));
+      const badTop = (x) => fgTop - Math.round(badEnv(x) * H * (0.07 + 0.13 * Math.pow(N.ridge(x * 0.045, 61, 2), 2) + 0.02 * N(x * 0.3, 62)));
+      const cityZone = (x) => (N.fbm(x * 0.005 + 100, 71, 2) > 0.4 || district(x) > 0.15) && badEnv(x) < 0.15;
+      const farPal = P.hillFar.map((c) => mix(c, P.far, 0.4)); // aerial perspective
+      for (let x = 0; x < W; x++) {
+        const t1 = farTop(x);
+        for (let y = t1; y < fgTop; y++) {
+          const v = 0.58 + relief(x, y, 0.035, 5, 9, 1.6) - (y - t1) / H * 0.45;
+          fp.put(x, y, P.rim && y === t1 && dith(x, y, 0.6) ? P.rim : tone(farPal, v, x, y));
+        }
+        const t2 = nearTop(x);
+        for (let y = t2; y < fgTop; y++) {
+          const v = 0.55 + relief(x, y, 0.022, 17, 11, 1.4) - (y - t2) / H * 0.3 + (y === t2 ? 0.15 : 0);
+          fp.put(x, y, P.rim && y === t2 ? mix(P.rim, P.hill[3], 0.4) : tone(P.hill, v, x, y));
+        }
+        const tb = badTop(x);
+        for (let y = tb; y < fgTop; y++) { // vertical ribs: lit on their left, shadowed on the right
+          const v = 0.58 + relief(x, y, 0.09, 29, 6, 0.25) - (y - tb) / H * 0.5 + (y === tb ? 0.12 : 0);
+          fp.put(x, y, tone(P.badland, v, x, y));
+        }
+      }
+      // La Paz on the slopes: little houses scattered in clumps, a few downtown towers.
+      const rc = mulberry32(0xa11e4);
+      const houses = Math.round(W * (fgTop - cityTop) * 0.3);
+      for (let i = 0; i < houses; i++) {
+        const x = Math.floor(rc() * W), y = cityTop + Math.floor(rc() * Math.max(1, fgTop - cityTop - 1));
+        if (!cityZone(x) || y < nearTop(x) + 2 || y >= badTop(x) || N2(x * 0.08, y * 0.12) < 0.38 + (1 - district(x)) * 0.22) { continue; } // denser downtown
+        const k = rc(), c = P.city[k < 0.4 ? 0 : k < 0.7 ? 1 : k < 0.85 ? 2 : k < 0.95 ? 3 : 4];
+        const wide = rc() < 0.5;
+        fp.put(x, y, c); if (wide) { fp.put(x + 1, y, c); }
+        fp.put(x, y + 1, P.city[5]);
+        if (rc() < 0.3) { cityLights.push({ x, y, p: rc() * 6.283, c: P.lights[Math.floor(rc() * P.lights.length)] }); }
+      }
+      const towers = Math.max(2, Math.round(W / 90)), cx0 = W * 0.4;
+      for (let i = 0; i < towers; i++) {
+        const tx = Math.round(cx0 + (rc() - 0.5) * W * 0.1), th = Math.round(H * (0.03 + rc() * 0.07)), tw = 2 + Math.floor(rc() * 2);
+        const tb = fgTop - 1 - Math.floor(rc() * 3);
+        for (let x = tx; x < tx + tw; x++) {
+          for (let y = tb - th; y <= tb; y++) {
+            const win = (x - tx) % 2 === 1 && y % 2 === 0;
+            fp.put(x, y, win ? P.city[5] : x === tx ? P.city[3] : P.city[4]);
+            if (win && rc() < 0.5) { cityLights.push({ x, y, p: rc() * 6.283, c: P.lights[2] }); }
+          }
+        }
+      }
+
+      // The altiplano in front: ochre ground with a little texture.
+      for (let y = fgTop; y < H; y++) {
+        const g = (y - fgTop) / Math.max(1, H - fgTop);
+        for (let x = 0; x < W; x++) {
+          const tex = N2(x * 0.25, y * 0.5) - 0.5;
+          fp.put(x, y, tone(y >= pathTop ? P.path : P.field, 0.7 - g * 0.5 + tex * 0.4, x, y));
+        }
+      }
+
+      // The perching rock (peñasco), lit from the left, flat-topped for the condor.
+      const rw = clamp(Math.round(H * 0.3), 14, 90), rh = clamp(Math.round(H * 0.24), 10, 70);
+      const rx0 = Math.round(W * 0.8 - rw / 2), rBase = pathTop;
+      let topMin = H;
+      const rockTop = (x) => {
+        const e = (x - rx0) / rw * 2 - 1;
+        if (e < -1 || e > 1) { return rBase + 1; }
+        // Asymmetric: a steep left face, a stepped slope to the right, a rough top.
+        const shape = e < 0 ? Math.pow(1 - Math.pow(-e, 2.4), 0.6) : Math.pow(1 - Math.pow(e, 1.6), 0.8);
+        return rBase - Math.round(rh * shape * (0.82 + 0.18 * N.fbm(x * 0.12, 81, 2)) - (e > 0.3 && e < 0.6 ? rh * 0.06 : 0));
+      };
+      for (let x = rx0; x < rx0 + rw; x++) {
+        const e = (x - rx0) / rw * 2 - 1, top = rockTop(x);
+        topMin = Math.min(topMin, top);
+        for (let y = top; y <= rBase; y++) {
+          const crack = N.ridge(x * 0.15 + y * 0.05, y * 0.08 + 5, 2);
+          let v = 0.6 - (e + 1) * 0.26 * L + relief(x, y, 0.08, 91, 4, 1) + (crack > 0.85 ? -0.35 : 0) - (y - top) / rh * 0.15;
+          if (y - top < 2) { v += 0.22; } // sunlit top edge
+          const edge = y === top || rockTop(x - 1) > y || rockTop(x + 1) > y;
+          let c = edge ? P.rockFg[0] : tone(P.rockFg, v, x, y);
+          if (!edge && N2(x * 0.7, y * 0.7 + 40) > 0.88) { c = mix(P.tuftHi, P.rockFg[2], 0.55); } // lichen
+          fp.put(x, y, c);
+        }
+      }
+      perchSpot = { x: rx0 + rw * 0.45, y: rockTop(Math.round(rx0 + rw * 0.45)), w: rw };
+
+      // Paja brava: golden spiky tussocks behind the path (and a few in front).
+      const tufts = Math.round(W / 6);
+      for (let i = 0; i < tufts; i++) {
+        const x = Math.floor(rf() * W), front_ = rf() < 0.2;
+        const by = front_ ? H - 1 - Math.floor(rf() * 2) : fgTop + 1 + Math.floor(rf() * Math.max(1, pathTop - fgTop));
+        if (x >= rx0 - 2 && x <= rx0 + rw + 2 && by <= rBase) { continue; }
+        const hh = Math.round((3 + rf() * 6) * clamp(H / 120, 1, 2.2)), k = 2 + Math.floor(rf() * 2);
+        for (let bl = -k; bl <= k; bl++) {
+          const len = Math.round(hh * (1 - Math.abs(bl) / (k + 1) * 0.35));
+          for (let j = 0; j < len; j++) {
+            const xx = Math.round(x + bl + (bl * 0.7 * j) / len);
+            fp.put(xx, by - j, j > len * 0.55 ? P.tuftHi : P.tuft);
+          }
+        }
+      }
+      fp.done();
+
+      buildWeather(rf);
+    }
+
+    // Andean life on top of the front layer: the city lights at dusk and at night.
+    function drawAndes() {
+      if (habitat !== 'andes') { return; }
+      if (mode === 'night' || mode === 'sunset') {
+        for (const l of cityLights) {
+          if (mode === 'sunset' && (l.p * 10) % 3 > 1) { continue; } // only some lit at dusk
+          if (Math.sin(t * 0.05 + l.p) > -0.7) { dot(sc, l.c, l.x, l.y); }
+        }
+      }
     }
 
     // Rain, snow and fog: particles over the scene, rebuilt with the layers.
@@ -1030,7 +1477,10 @@
 
     function drawShadow(p) {
       if (!p || swimmer) { return; }
-      const cx = (p.x + o.pet / 2) / PX, rx = (o.pet * 0.34) / PX, cy = row(o.feet);
+      const lift = p.shadowAt !== undefined ? Math.max(0, baseOf(p) - p.shadowAt) : 0;
+      const k = clamp(1 - lift / Math.max(1, H * PX), 0.3, 1);
+      const cx = (p.x + o.pet / 2) / PX, rx = (o.pet * (o.shadowW || 0.34) * k) / PX;
+      const cy = row((p.shadowAt !== undefined ? p.shadowAt : o.base) + o.feet - o.base);
       sc.fillStyle = P.shadow;
       sc.fillRect(Math.round(cx - rx * 0.8), cy - 1, Math.round(rx * 1.6), 1);
       sc.fillRect(Math.round(cx - rx), cy, Math.round(rx * 2), 1);
@@ -1043,6 +1493,7 @@
         sc.drawImage(back, 0, 0);
         drawSky();
         sc.drawImage(front, 0, 0);
+        drawAndes();
         drawFalling();
         drawWater();
         drawSwimmer();
@@ -1076,11 +1527,11 @@
     // ---------------------------------------------------------- particles
 
     function geo(p) {
-      const L = p.x / PX, w = o.pet / PX;
+      const L = p.x / PX, w = o.pet / PX, b = baseOf(p);
       return {
-        L, w, cx: L + w / 2, foot: row(o.feet),
+        L, w, cx: L + w / 2, foot: row(b + o.feet - o.base),
         head: L + w * (p.face > 0 ? 0.68 : 0.32),
-        top: row(o.base + o.pet * 0.6),
+        top: row(b + o.pet * 0.6),
       };
     }
 
@@ -1160,7 +1611,10 @@
           if (blink) { blit(fc, NOTE, { x: P.ink }, x, y); }
           break;
         case 'fruit':
-          if (blink) { blit(fc, ORANGE, ORANGE_C, x - 2, y - 4); }
+          if (blink) {
+            if (condor) { blitK(fc, CHULLO, CHULLO_C, x - 3 * HK, y - 6 * HK, false, HK); }
+            else { blit(fc, ORANGE, ORANGE_C, x - 2, y - 4); }
+          }
           break;
         case 'splash':
         case 'drip':
@@ -1181,10 +1635,10 @@
         const col = swimmer.face > 0 ? SWIM_HEAD : SWIM_W - 1 - SWIM_HEAD;
         return { x: Math.round(swimmer.x) + col, y: swimY - 6 + bob, small: true };
       }
-      const h = p && HEAD[p.state];
+      const h = p && (o.heads ? o.heads[p.pose] : HEAD[p.state]);
       if (!h) { return null; }
       const col = p.face > 0 ? h[0] : GRID - 1 - h[0];
-      return { x: Math.round(p.x / PX + col), y: row(o.base + (GRID - h[1]) * PX), small: false };
+      return { x: Math.round(p.x / PX + col), y: row(baseOf(p) + (GRID - h[1]) * PX), small: false };
     }
 
     // A bird lands on the head while the capybara is calm (not at night) and
@@ -1192,7 +1646,7 @@
     function updateBird(p, a) {
       const calm = !!a && (!!swimmer || !p.moving || p.state === 'walk');
       if (!perch) {
-        if (calm && anim && mode !== 'night' && !P.wet && !orange && !orangeWait && Math.random() < 1 / 700) {
+        if (calm && anim && !condor && mode !== 'night' && !P.wet && !orange && !orangeWait && Math.random() < 1 / 700) {
           const from = Math.random() < 0.5 ? -1 : 1;
           perch = { phase: 'in', x: a.x + from * 40, y: Math.max(1, a.y - 25), face: -from, sit: 0 };
         }
@@ -1231,7 +1685,7 @@
     function fruitFalls(p, a) {
       add({
         k: 'fruit', x: a.x, y: a.y - 3, vx: -(p.face || 1) * 0.35, vy: -0.7, g: 0.1,
-        floor: row(o.feet) - 3, life: 34,
+        floor: row(o.feet) - 3 * (condor ? HK : 1), life: 34,
       });
     }
 
@@ -1245,11 +1699,11 @@
       fc.clearRect(0, 0, W, H);
       drawFood();
       if (orange > 0 && a) {
-        const bm = a.small ? ORANGE_S : ORANGE;
-        blit(fc, bm, ORANGE_C, a.x - (bm[0].length >> 1), a.y - bm.length + 1);
+        const bm = condor ? CHULLO : a.small ? ORANGE_S : ORANGE, k = condor ? HK : 1;
+        blitK(fc, bm, condor ? CHULLO_C : ORANGE_C, a.x - ((bm[0].length * k) >> 1), a.y - bm.length * k + 1, p.face < 0, k);
       } else if (hat) {
         const bm = a.small ? HAT_S : HAT;
-        blit(fc, bm, HAT_C, a.x - (bm[0].length >> 1), a.y - bm.length + 1, (swimmer ? swimmer.face : p.face) < 0);
+        blitK(fc, bm, HAT_C, a.x - ((bm[0].length * HK) >> 1), a.y - bm.length * HK + 1, (swimmer ? swimmer.face : p.face) < 0, HK);
       }
       if (perch) {
         const x = Math.round(perch.x), y = Math.round(perch.y);
@@ -1278,9 +1732,9 @@
             });
           }
         } else if (p.state === 'scared') {
-          add({ k: 'alert', x: g.head, y: row(o.base + o.pet * 0.72) - 1, life: 16 });
+          add(hd ? { k: 'alert', x: hd.x, y: hd.y - 3, life: 16 } : { k: 'alert', x: g.head, y: row(o.base + o.pet * 0.72) - 1, life: 16 });
         }
-        if (prevState === 'jump') { dust(p, 6); } // landing puff
+        if (prevState === 'jump' && !(p.alt > 1)) { dust(p, 6); } // landing puff
         prevState = p.state;
       }
       if (p.state === 'celebrate' && t % 4 === 0) {
@@ -1288,15 +1742,17 @@
       }
       // The sprites carry no loose details (zzz, steam, sweat): drawn here instead.
       const side = (f) => g.L + g.w * (p.face > 0 ? f : 1 - f);
+      const hd = condor ? headAnchor(p) : null;
       if (p.state === 'sleep' && t % 20 === 0) {
-        add({ k: 'zz', x: side(0.8), y: row(o.base + o.pet * 0.5) - 4, vx: 0.12 * p.face, vy: -0.16, life: 26 });
+        add(hd ? { k: 'zz', x: hd.x + 4 * p.face, y: hd.y - 6, vx: 0.12 * p.face, vy: -0.16, life: 26 }
+          : { k: 'zz', x: side(0.8), y: row(o.base + o.pet * 0.5) - 4, vx: 0.12 * p.face, vy: -0.16, life: 26 });
       }
-      if (p.state === 'coffee' && t % 4 === 0) {
+      if (p.state === 'coffee' && !condor && t % 4 === 0) {
         add({ k: 'steam', x: side(0.82) + rand(-0.5, 0.5), y: row(o.base + o.pet * 0.36), vy: -0.25, life: 12, p: rand(0, 6) });
       }
       if (p.state === 'scared' && t % 9 === 0) {
         add({
-          k: 'sweat', x: side(0.74), y: row(o.base + o.pet * 0.66),
+          k: 'sweat', x: hd ? hd.x + 3 * p.face : side(0.74), y: hd ? hd.y + 3 : row(o.base + o.pet * 0.66),
           vx: p.face * rand(0.15, 0.35), vy: -rand(0.3, 0.5), g: 0.07, life: 12,
         });
       }
@@ -1309,8 +1765,9 @@
           });
         }
       }
-      if (p.moving && p.state === 'run' && t % 3 === 0) { dust(p, 2, -p.face); }
-      if (p.moving && p.state === 'walk' && t % 14 === 0) { dust(p, 1, -p.face); }
+      const onGround = !(p.alt > 1); // no dust in the air
+      if (onGround && p.moving && p.state === 'run' && t % 3 === 0) { dust(p, 2, -p.face); }
+      if (onGround && p.moving && p.state === 'walk' && t % 14 === 0) { dust(p, 1, -p.face); }
     }
 
     // ------------------------------------------------------------- resize
@@ -1352,8 +1809,8 @@
           clock = 0;
           const m = baseMode(), wd = worldNow();
           if (m !== mode || wd.weather !== world.weather || wd.season !== world.season ||
-              wd.holiday !== world.holiday || wd.day !== world.day) {
-            mode = m; world = wd; P = adjust(PAL[m], m, wd);
+              wd.holiday !== world.holiday || wd.day !== world.day || wd.dawn !== world.dawn) {
+            mode = m; world = wd; P = adjust(palFor(m, wd), m, wd);
             if (swimmer && P.frozen) { swimmer = null; } // the lake froze over
             W = H = 0; resize(); report();
           }
@@ -1399,6 +1856,13 @@
       swimmerAt() {
         if (!swimmer) { return null; }
         return { cx: (swimmer.x + SWIM_W / 2) * PX, top: (H - (swimY - 6)) * PX };
+      },
+      // A puff of dust at the pet's feet (the condor touching down).
+      puff(p) { if (anim) { dust(Object.assign({}, p, { bottom: 4, alt: 0 }), 6); } },
+      // The condor's rock: centre x and the CSS bottom offset of its top, or null.
+      perch() {
+        if (habitat !== 'andes' || !perchSpot || !scenic) { return null; }
+        return { x: perchSpot.x * PX, bottom: (H - perchSpot.y) * PX };
       },
       // Easter egg: a mandarin on the head.
       orange() { orangeWait = 40; },

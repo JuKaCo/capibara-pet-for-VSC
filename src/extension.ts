@@ -16,6 +16,8 @@ import { watchGit, watchTasks } from './reactions';
 //             (or on command); any editor activity brings it back out
 //   eat       munches a watermelon slice (the Feed command)
 // Optional: a baby capybara that follows it, fur colour variants, 8-bit sounds.
+// Or pick the Andean condor (capibaraPet.pet): it soars over the Illimani in its own
+// habitat, perches on a rock to sunbathe and sleep, and spreads its wings to celebrate.
 // Click the capybara -> it hops and a pixel heart floats up. The animation pauses
 // when the view is hidden, and it respects the user's prefers-reduced-motion setting.
 // The stage (day/night scenery, shadow and particles) is procedural pixel art drawn
@@ -34,6 +36,20 @@ const FURS: { [name: string]: { f: string; h: string; s: string; d: string } } =
   golden: { f: '#d9a050', h: '#f4c474', s: '#a87434', d: '#8a5c28' },
   cream: { f: '#e6d3bc', h: '#fbeedd', s: '#c2ab92', d: '#a88e86' },
   ash: { f: '#8c8782', h: '#aba6a0', s: '#67635f', d: '#55514d' },
+};
+
+// The condor: finer pixel art (84×84 cells, made by tools/condor.py from art/condor/).
+// `head` is the top-centre of its head in each pose (for hats and effects); `glide`
+// is the level-wings frame of `fly`, held still.
+const CONDOR_GRID = 84;
+const CONDOR_POSES: { [pose: string]: { n: number; dur: number; head: [number, number] } } = {
+  fly: { n: 4, dur: 0.48, head: [52, 29] },
+  hop: { n: 4, dur: 0.6, head: [51, 37] },
+  perch: { n: 2, dur: 1.8, head: [48, 29] },
+  spread: { n: 2, dur: 0.5, head: [45, 37] },
+  scared: { n: 2, dur: 0.24, head: [45, 21] },
+  sunbathe: { n: 2, dur: 2.2, head: [42, 29] },
+  sleep: { n: 2, dur: 2.4, head: [46, 31] },
 };
 
 interface SheetCfg { n: number; dur: number; }
@@ -101,7 +117,9 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     // One "art pixel" = one sprite pixel on screen; the scenery, particles and the
     // movement grid all use it. Sizes that are multiples of SPRITE_GRID (42, 84,
     // 126) give whole screen pixels, so the art stays perfectly even.
-    const PX = DISP / SPRITE_GRID;
+    const condor = cfg.get<string>('pet', 'capybara') === 'condor';
+    const GRID = condor ? CONDOR_GRID : SPRITE_GRID;
+    const PX = DISP / GRID;
     // CSS offset of the sprite's feet from the stage bottom (they sit 2 px above the cell bottom).
     const FEET = 4 + PX * 2;
     const BPX = Math.max(1, Math.round(PX)); // bubble border/tail thickness
@@ -111,15 +129,24 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
     const furName = FURS[cfg.get<string>('color', 'classic')] ? cfg.get<string>('color', 'classic') : 'classic';
     const sheet = (s: string) => this.uri(webview, (furName === 'classic' ? '' : `fur/${furName}/`) + s + '_sheet.png');
 
-    const classes = states.map((s) => {
-      const { n, dur } = SHEETS[s];
-      return `.s-${s}{background-image:url('${sheet(s)}');background-size:${n * DISP}px ${DISP}px;` +
-        `animation:play${n} ${dur}s steps(${n}) infinite;}`;
-    }).join('\n  ') +
-      // Eating: the first walk frame, standing still (it nibbles by squashing a pixel).
-      `\n  .s-eat{background-image:url('${sheet('walk')}');background-size:${SHEETS.walk.n * DISP}px ${DISP}px;}`;
+    const condorSheet = (pose: string) => this.uri(webview, `condor/${pose}_sheet.png`);
+    const classes = condor
+      ? Object.keys(CONDOR_POSES).map((pose) => {
+        const { n, dur } = CONDOR_POSES[pose];
+        return `.s-${pose}{background-image:url('${condorSheet(pose)}');background-size:${n * DISP}px ${DISP}px;` +
+          `animation:play${n} ${dur}s steps(${n}) infinite;}`;
+      }).join('\n  ') +
+        // Gliding: the level-wings frame of the wing beat, held still.
+        `\n  .s-glide{background-image:url('${condorSheet('fly')}');background-size:${4 * DISP}px ${DISP}px;background-position-x:-${DISP}px;}`
+      : states.map((s) => {
+        const { n, dur } = SHEETS[s];
+        return `.s-${s}{background-image:url('${sheet(s)}');background-size:${n * DISP}px ${DISP}px;` +
+          `animation:play${n} ${dur}s steps(${n}) infinite;}`;
+      }).join('\n  ') +
+        // Eating: the first walk frame, standing still (it nibbles by squashing a pixel).
+        `\n  .s-eat{background-image:url('${sheet('walk')}');background-size:${SHEETS.walk.n * DISP}px ${DISP}px;}`;
 
-    const sizes = Array.from(new Set(states.map((s) => SHEETS[s].n)));
+    const sizes = Array.from(new Set(states.map((s) => SHEETS[s].n).concat([4, 2])));
     const keyframes = sizes.map((n) =>
       `@keyframes play${n}{from{background-position-x:0;}to{background-position-x:-${n * DISP}px;}}`
     ).join('\n  ');
@@ -133,8 +160,13 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
       weather: cfg.get<string>('weather', 'auto'),
       seasons: cfg.get<boolean>('seasons', true),
       hemisphere: cfg.get<string>('hemisphere', 'auto'),
-      baby: cfg.get<boolean>('baby', true),
+      baby: !condor && cfg.get<boolean>('baby', true),
       fur: FURS[furName],
+      kind: condor ? 'condor' : 'capybara',
+      habitat: condor ? 'andes' : 'lake',
+      heads: condor ? Object.assign({ glide: CONDOR_POSES.fly.head },
+        ...Object.keys(CONDOR_POSES).map((p) => ({ [p]: CONDOR_POSES[p].head }))) : undefined,
+      shadowW: condor ? 0.22 : 0.34,
     });
     const k = vscode.window.activeColorTheme.kind;
     const isDark = k === vscode.ColorThemeKind.Dark || k === vscode.ColorThemeKind.HighContrast;
@@ -209,7 +241,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
 <div id="stage">
-  <div id="pet" title="${esc(name)}"><div id="breath"><div id="sprite" class="s-walk"></div></div></div>
+  <div id="pet" title="${esc(name)}"><div id="breath"><div id="sprite" class="s-${condor ? 'glide' : 'walk'}"></div></div></div>
   <div id="floor"></div>
 </div>
 <script nonce="${nonce}" src="${this.uri(webview, 'pixelart.js')}"></script>
@@ -223,6 +255,8 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
   const BUBBLES = ${bubbles};
   const PETS = ['hi!', 'hee!', '♥'];
   const PX = ${PX};   // art pixel: the pet snaps to this grid, like the scenery
+  const KIND = '${condor ? 'condor' : 'capybara'}';
+  const SPEED = ${speed};
   const SOUNDS = ${sounds};
   const sfx = (n) => { if (SOUNDS && window.Chiptune) { window.Chiptune.play(n); } };
 
@@ -234,7 +268,7 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
   const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const snap = (v) => Math.round(v / PX) * PX;
   const pix = window.PixelArt.create({
-    stage, px: PX, pet: PET, grid: ${SPRITE_GRID}, base: 4, feet: ${FEET},
+    stage, px: PX, pet: PET, grid: ${GRID}, base: 4, feet: ${FEET},
     mode: '${sceneMode ? mode : 'none'}', reduced: REDUCED, ...${world},
     onWorld: (w) => vscodeApi.postMessage({ type: 'world', w: w }),
     sfx: sfx,
@@ -242,7 +276,7 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
 
   let x = 20, dir = 1;
   let inactivity = 0, runFor = 0, celebrateFor = 0, scaredFor = 0, jumpFor = 0, typeRate = 0;
-  let lastState = '', frameN = 0;
+  let lastState = '', frameN = 0, lastP = null;
 
   // Swimming: when a break starts it sometimes heads for the lake instead of its
   // coffee (once per break); any editor activity brings it back out, dripping.
@@ -394,16 +428,111 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
     sprite.classList.toggle('chew', s === 'eat' && !REDUCED && (frameN >> 2) % 2 === 0);
 
     // Scenery, shadow and particles follow the (snapped) pet.
-    pix.frame({ x: px, face: face, state: s, moving: mv > 0 });
+    lastP = { x: px, face: face, state: s, moving: mv > 0 };
+    pix.frame(lastP);
+  }
+
+  // ------------------------------------------------------------- the condor
+  // It soars in slow circles (thermals) over the Andes and flaps when it climbs or
+  // when you type; on a break it flies to its rock to sunbathe, then sleeps there;
+  // it spreads its wings to celebrate, shoots up when scared, now and then lands on
+  // the ground for a few hops, and can be dragged anywhere.
+  const C = { mode: 'air', alt: -1, theta: 0, cx: -1, pose: 'glide', flap: 0, ground: 0, takeoff: 0 };
+  // Taking off: wings open and a push upwards for a moment, then flapping.
+  function takeOff() { C.mode = 'air'; C.flap = 18; C.takeoff = 6; }
+  const FEET_OFF = ${FEET} - 4;           // feet above the cell's bottom edge
+  const maxAlt = () => Math.max(0, stage.clientHeight - PET - 6);
+
+  function condorTick() {
+    inactivity++;
+    if (runFor>0) runFor--; if (celebrateFor>0) celebrateFor--;
+    if (scaredFor>0) scaredFor--; if (jumpFor>0) jumpFor--;
+    if (shakeFor > 0) { shakeFor--; }
+    const W = stage.clientWidth, perch = pix.perch();
+    if (C.cx < 0) { C.cx = W / 2; C.alt = maxAlt() * 0.6; x = W / 2 - PET / 2; }
+    const s = state();
+    if (s !== lastState) {
+      lastState = s;
+      vscodeApi.postMessage({ type: 'state', s: s });
+      if (s === 'sleep') bubble('zzz');
+      else if (s === 'coffee') bubble('☀️');
+    }
+    let pose = 'glide', moving = false;
+    const busy = s === 'run' || s === 'jump' || inactivity < 2;
+    const rest = (s === 'coffee' || s === 'sleep') && !!perch && !REDUCED;
+    if (dragging) {
+      pose = C.alt > 6 ? 'fly' : 'perch';
+    } else if (C.mode === 'perched' || C.mode === 'ground') {
+      if (C.mode === 'ground' && --C.ground <= 0) { takeOff(); }
+      if (C.mode === 'perched' && !rest && s !== 'celebrate' && s !== 'scared') { takeOff(); }
+      if (C.mode === 'ground' && busy) { takeOff(); }
+      if (C.mode === 'ground' && C.mode !== 'air') { // a few clumsy hops now and then
+        if ((C.ground >> 4) % 3 === 0 && !REDUCED) { x += dir * 0.7 * SPEED; moving = true; }
+        if (x < 4 || x > W - PET - 4) { dir = -dir; }
+      }
+      pose = C.mode === 'air' ? 'spread' // just took off: wings open
+        : s === 'sleep' ? 'sleep' : s === 'coffee' ? 'sunbathe' : s === 'celebrate' ? 'spread'
+        : s === 'scared' ? 'scared' : moving ? 'hop' : 'perch';
+    } else if (rest) { // fly to the rock and land on it
+      const tx = perch.x - PET / 2, ta = perch.bottom - 4 - FEET_OFF;
+      const dx = tx - x, da = ta - C.alt, d = Math.hypot(dx, da);
+      const flare = d < 26 && !REDUCED, v = (flare ? 1.4 : 2.6) * SPEED; // brakes with open wings
+      if (d <= v) { x = tx; C.alt = ta; C.mode = 'perched'; pose = 'perch'; }
+      else {
+        x += dx / d * v; C.alt += da / d * v; dir = dx >= 0 ? 1 : -1; moving = true;
+        pose = flare ? 'spread' : da > 1 ? 'fly' : 'glide';
+      }
+    } else { // soaring in a thermal that drifts across the sky
+      const fast = s === 'run', rx = Math.min(W * 0.32, 170), ry = Math.max(5, maxAlt() * 0.12);
+      C.theta += (fast ? 0.05 : 0.02) * SPEED;
+      C.cx += (W / 2 - C.cx) * 0.003 + Math.sin(C.theta * 0.11) * 0.4;
+      const tx = C.cx + Math.cos(C.theta) * rx - PET / 2;
+      let ta = maxAlt() * (fast ? 0.42 : s === 'scared' ? 0.95 : 0.62) + Math.sin(C.theta) * ry;
+      if (s === 'jump') { ta -= 8; }
+      const nx = REDUCED ? x : x + (tx - x) * 0.08;
+      const na = REDUCED ? C.alt : C.alt + (ta - C.alt) * (s === 'scared' ? 0.18 : 0.06);
+      if (Math.abs(nx - x) > 0.05) { dir = nx > x ? 1 : -1; moving = true; }
+      const climbing = na - C.alt > 0.35;
+      x = nx; C.alt = na;
+      if (C.takeoff > 0) { C.takeoff--; C.alt += 1.6 * SPEED; }
+      if (C.flap > 0) { C.flap--; }
+      else if (climbing && Math.random() < 0.04) { C.flap = 12 + Math.floor(Math.random() * 14); }
+      pose = C.takeoff > 0 ? 'spread' : fast || s === 'scared' || s === 'jump' || s === 'celebrate' || C.flap > 0 ? 'fly' : 'glide';
+      // Once in a while it comes down to the ground for a few hops.
+      if (!fast && s === 'walk' && !REDUCED && Math.random() < 1 / 1400) { C.mode = 'landing'; }
+    }
+    if (C.mode === 'landing' && !dragging) {
+      C.alt = Math.max(0, C.alt - (C.alt < 20 ? 0.9 : 1.6) * SPEED);
+      pose = C.alt < 20 ? 'spread' : 'glide'; // flares its wings just before touching down
+      if (C.alt <= 0) {
+        C.mode = 'ground'; C.ground = 140 + Math.floor(Math.random() * 120);
+        if (lastP) { pix.puff(lastP); } // a puff of dust as it lands
+      }
+      if (busy) { takeOff(); }
+    }
+    x = Math.min(Math.max(x, -PET * 0.15), W - PET * 0.85);
+    C.alt = Math.min(Math.max(C.alt, 0), Math.max(maxAlt(), perch ? perch.bottom : 0));
+    const px = snap(x), bottom = 4 + snap(C.alt);
+    pet.style.left = px + 'px';
+    pet.style.bottom = bottom + 'px';
+    frameN++;
+    const shiver = (pose === 'scared' || shakeFor > 0) && !REDUCED && (frameN >> 1) % 2 ? PX : 0;
+    pet.style.transform = 'translateX(' + shiver + 'px) scaleX(' + (dir > 0 ? 1 : -1) + ')';
+    if (pose !== C.pose) { sprite.className = 's-' + pose; C.pose = pose; }
+    lastP = {
+      x: px, face: dir, state: s, moving: moving, pose: pose, bottom: bottom, alt: C.alt,
+      shadowAt: C.mode === 'perched' ? bottom : 4, // on the rock, or on the ground far below
+    };
+    pix.frame(lastP);
   }
 
   let timer = null;
-  function start() { if (!timer) { timer = setInterval(tick, TICK); } }
+  function start() { if (!timer) { timer = setInterval(KIND === 'condor' ? condorTick : tick, TICK); } }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
   start();
 
   // Click the pet: a little hop and a pixel heart floating up.
-  function heart() { pix.heart({ x: snap(x), face: dir }); }
+  function heart() { pix.heart(lastP || { x: snap(x), face: dir }); }
 
   // Small speech bubble above the pet (one at a time).
   let curBubble = null;
@@ -415,7 +544,8 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
     b.textContent = text;
     const sw = inWater() ? pix.swimmerAt() : null; // above the swimmer, if in the lake
     b.style.left = (sw ? sw.cx : snap(x + PET / 2)) + 'px';
-    b.style.bottom = (sw ? sw.top + 6 : 8 + PET) + 'px';
+    const up = KIND === 'condor' && lastP ? lastP.bottom - 4 - PET * 0.12 : 0; // above the bird, wherever it flies
+    b.style.bottom = (sw ? sw.top + 6 : 8 + PET + up) + 'px';
     stage.appendChild(b);
     curBubble = b;
     setTimeout(() => { if (b === curBubble) { curBubble = null; } b.remove(); }, 1600);
@@ -430,14 +560,14 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
     clicks.push(now);
     while (clicks.length && now - clicks[0] > 3000) { clicks.shift(); }
     const yuzu = clicks.length >= 5;
-    if (yuzu) { clicks.length = 0; pix.orange(); }
+    if (yuzu) { clicks.length = 0; pix.orange(); } // a mandarin — or, for the condor, a chullo
     sfx(yuzu ? 'yuzu' : 'pet');
     if (!inWater()) {
       leaveWater(); // cancels a walk to the lake
       if (!yuzu) { jumpFor = 9; } // no hop, so the mandarin lands right away
     }
     heart();
-    bubble(yuzu ? 'yuzu!' : PETS[Math.floor(Math.random() * PETS.length)]);
+    bubble(yuzu ? (KIND === 'condor' ? 'chullo!' : 'yuzu!') : PETS[Math.floor(Math.random() * PETS.length)]);
   });
 
   // Drag the capybara horizontally with the mouse.
@@ -453,11 +583,16 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
     const max = Math.max(0, stage.clientWidth - PET);
     x = Math.min(max, Math.max(0, e.clientX - r.left - PET / 2));
     pet.style.left = snap(x) + 'px';
+    if (KIND === 'condor') {
+      C.alt = Math.min(maxAlt(), Math.max(0, r.bottom - e.clientY - PET / 2));
+      C.mode = 'air'; C.cx = x + PET / 2; C.theta = 0;
+    }
   });
   window.addEventListener('mouseup', () => {
     if (!dragging) { return; }
     dragging = false;
     document.body.classList.remove('dragging');
+    if (KIND === 'condor' && C.alt < 8) { C.mode = 'ground'; C.alt = 0; C.ground = 160; if (lastP) { pix.puff(lastP); } }
   });
 
   window.addEventListener('message', (e) => {
@@ -465,6 +600,7 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
     // Pause/resume the loop when the view is hidden/shown (saves CPU).
     if (m.type === 'pause') { stop(); document.body.classList.add('paused'); return; }
     if (m.type === 'resume') { start(); document.body.classList.remove('paused'); return; }
+    if (KIND === 'condor' && (m.type === 'swim' || m.type === 'feed')) { bubble('?'); return; }
     if (m.type === 'swim') { stopMeal(); if (!goSwim()) { bubble('?'); } return; }
     if (m.type === 'feed') { goFeed(); return; }
     if (m.type !== 'pet') { leaveWater(); stopMeal(); } // editor activity: out of the water / meal
@@ -488,6 +624,10 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
 const MOOD: { [s: string]: string } = {
   walk: '🚶', run: '🏃', jump: '🦘', celebrate: '🎉', scared: '😱', coffee: '☕', sleep: '😴', swim: '🏊', eat: '🍉',
 };
+// The condor's moods: soaring, flapping, sunbathing on its rock…
+const CONDOR_MOOD: { [s: string]: string } = {
+  walk: '🪶', run: '💨', jump: '💨', celebrate: '🎉', scared: '😱', coffee: '☀️', sleep: '😴',
+};
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new CapibaraViewProvider(context.extensionUri);
@@ -506,8 +646,9 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
     const name = (c.get<string>('name', '') || '').trim();
-    statusBar.text = `🦫 ${MOOD[s] || '🚶'}`;
-    statusBar.tooltip = `${name || 'Capibara Pet'} — ${s}${worldTip}`;
+    const condor = c.get<string>('pet', 'capybara') === 'condor';
+    statusBar.text = condor ? `🦅 ${CONDOR_MOOD[s] || '🪶'}` : `🦫 ${MOOD[s] || '🚶'}`;
+    statusBar.tooltip = `${name || (condor ? 'Condor' : 'Capibara Pet')} — ${s}${worldTip}`;
     statusBar.show();
   };
   provider.onState = updateStatusBar;

@@ -2,6 +2,34 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.11.0]
+
+### Added
+- **A second pet: the Andean condor** (`capibaraPet.pet`: `capybara` or `condor`). It
+  has its own finer pixel art (84×84 cells, about twice the detail of the capybara) and
+  its own behaviour: it soars in slow circles riding thermals and flaps when it climbs
+  or when you type; on a break it flies to its rock to **sunbathe with its wings open**,
+  then sleeps there; it **spreads its wings** to celebrate, shoots up when something
+  fails, now and then lands for a few clumsy hops, and can be dragged anywhere in the
+  sky. Its shadow on the ground shrinks the higher it flies.
+- **Its habitat: the Illimani over La Paz**, drawn on the same finer grid — the
+  three-summit massif with relief shaded from a height field (rocky ribs, glacier
+  tongues, its feet fading into the haze), brown foothills with ravines, eroded
+  badlands like the Valle de la Luna, the city on the slopes (its lights twinkle at dusk
+  and at night), the altiplano with paja brava, and a perching rock. Cirrus streaks and
+  billowing cumulus in a deep high-altitude sky; at sunset the mountain glows pink and
+  gold (the sun is behind you). Time of day, weather, seasons, holidays and the real
+  moon phase all work there too.
+- **Easter egg**: pet the condor five times in a row and it wears a **chullo**.
+- **Dawn over the Illimani**: following the clock, the warm light of the morning is
+  now a real sunrise — the sun peeks over the right summit and the massif stands dark
+  against a golden sky, its crest rimmed with light (at dusk it keeps glowing pink).
+- **Take-off and landing**: the condor flares its wings to brake as it lands on its
+  rock or on the ground (raising a puff of dust), and opens them to push off before
+  flapping away.
+- The status bar shows 🦅 and the condor's own moods (🪶 soaring, 💨 flapping,
+  ☀️ sunbathing, 😴 asleep).
+
 ## [0.10.0]
 
 ### Added

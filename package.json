@@ -2,7 +2,7 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "%ext.description%",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
@@ -67,6 +67,16 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "%config.enabled.desc%"
+        },
+        "capibaraPet.pet": {
+          "type": "string",
+          "default": "capybara",
+          "enum": ["capybara", "condor"],
+          "enumDescriptions": [
+            "The capybara, in its wetland by the lake.",
+            "The Andean condor, soaring over the Illimani and La Paz."
+          ],
+          "markdownDescription": "%config.pet.desc%"
         },
         "capibaraPet.size": {
           "type": "number",

@@ -58,6 +58,7 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | Setting | Default | What it does |
 |---------|:-------:|--------------|
 | `capibaraPet.enabled` | `true` | Show the capybara. Turn off to hide it without uninstalling. |
+| `capibaraPet.pet` | `capybara` | Your pet: the `capybara` (by the lake) or the Andean `condor` (over the Illimani). |
 | `capibaraPet.size` | `84` | Size of the capybara, in pixels (40–160). |
 | `capibaraPet.speed` | `1` | Walk/run speed multiplier (0.25–3). |
 | `capibaraPet.coffeeAfterSeconds` | `6` | Idle seconds before the coffee break. |
@@ -143,11 +144,17 @@ Pick a fur colour with `capibaraPet.color` — `classic`, `chocolate`, `golden`,
 ### Little details
 
 - **Effects**: a hard pixel shadow, dust puffs when it walks, runs or lands, confetti and sparkles when it celebrates, a "!" and sweat drops when it gets scared, and a pixel heart when you pet it.
-- Hover the 🦫 status bar item to see the current weather and season.
+- Hover the 🦫 (or 🦅) status bar item to see the current weather and season.
 - The pet moves on the same pixel grid as the scenery. With `prefers-reduced-motion`, the scene stays still and the effects are off.
 - Sizes that are multiples of 42 (`42`, `84`, `126`) keep every pixel perfectly even.
 
 There are a couple of surprises too: keep it calm for a while in daylight and you may get a visitor 🐦 — and try petting it many times in a row 🍊.
+
+## 🦅 The Andean condor
+
+Prefer wings? Set `capibaraPet.pet` to `condor`. The condor has its own, finer pixel art and lives in its own habitat: **the Illimani over La Paz** — the snowy three-summit massif, brown foothills and eroded badlands, the city on the slopes (its lights twinkle at night) and the altiplano with paja brava.
+
+It soars in slow circles riding thermals and flaps when you type; on a break it flies to its rock to sunbathe with its wings open and then sleeps there; it spreads its wings when you save or commit, and shoots up into the sky when something fails. Drag it anywhere in the sky — or drop it on the ground and watch it hop.
 
 ## Install from the Marketplace
 

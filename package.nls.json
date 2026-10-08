@@ -8,6 +8,7 @@
   "cmd.toggle.title": "Show/Hide the Capybara",
   "config.title": "Capibara Pet",
   "config.enabled.desc": "Show the capybara. Turn off to hide it without uninstalling.",
+  "config.pet.desc": "Your pet: the `capybara` (in its wetland by the lake) or the Andean `condor` (soaring over the Illimani, with its own finer pixel art). Each lives in its own habitat.",
   "config.size.desc": "Size of the capybara, in pixels. Multiples of 42 (42, 84, 126) keep the pixel art perfectly crisp.",
   "config.speed.desc": "Movement speed multiplier for walking and running (`1` = default).",
   "config.coffeeAfterSeconds.desc": "Seconds of inactivity before the capybara takes a coffee break.",

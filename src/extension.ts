@@ -486,8 +486,10 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
       const fast = s === 'run', rx = Math.min(W * 0.32, 170), ry = Math.max(5, maxAlt() * 0.12);
       C.theta += (fast ? 0.05 : 0.02) * SPEED;
       C.cx += (W / 2 - C.cx) * 0.003 + Math.sin(C.theta * 0.11) * 0.4;
-      const tx = C.cx + Math.cos(C.theta) * rx - PET / 2;
-      let ta = maxAlt() * (fast ? 0.42 : s === 'scared' ? 0.95 : 0.62) + Math.sin(C.theta) * ry;
+      const th = pix.thermal(); // a dust devil = rising air: it circles over it, higher
+      if (th !== null && !fast) { C.cx += (th - C.cx) * 0.03; }
+      const tx = C.cx + Math.cos(C.theta) * rx * (th !== null && !fast ? 0.6 : 1) - PET / 2;
+      let ta = maxAlt() * (fast ? 0.42 : s === 'scared' ? 0.95 : th !== null ? 0.82 : 0.62) + Math.sin(C.theta) * ry;
       if (s === 'jump') { ta -= 8; }
       const nx = REDUCED ? x : x + (tx - x) * 0.08;
       const na = REDUCED ? C.alt : C.alt + (ta - C.alt) * (s === 'scared' ? 0.18 : 0.06);

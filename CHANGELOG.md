@@ -29,6 +29,12 @@ All notable changes to the **Capibara Pet** extension are documented here.
   flapping away.
 - The status bar shows 🦅 and the condor's own moods (🪶 soaring, 💨 flapping,
   ☀️ sunbathing, 😴 asleep).
+- **Andean life**: dust devils whirl across the dry altiplano now and then — rising
+  air, so the condor drifts over and circles above them, higher; a small herd of
+  llamas with coloured wool tassels in their ears crosses the plain, stopping to graze;
+  a vizcacha peeks out at the foot of the condor's rock (and hides when it comes close).
+- **Feathers**: the condor loses one now and then when it flaps hard or gets a fright;
+  it drifts down swaying and rests on the ground.
 
 ## [0.10.0]
 

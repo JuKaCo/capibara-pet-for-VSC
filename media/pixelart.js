@@ -487,6 +487,30 @@
   const CHULLO = ['...p...', '..rrr..', '.ryyyr.', 'rbrbrbr', 'rrrrrrr', 'b.....b', 'y.....y'];
   const CHULLO_C = { p: '#f2f2f2', r: '#d8343a', y: '#f2c230', b: '#2a6ad8' };
 
+  // Andean fauna (facing right; the last row stands on the ground).
+  // A llama with coloured wool tassels in its ears (t), walking (2 frames) and grazing.
+  const LLAMA = [
+    ['........t.t..', '........o.o..', '.......owwwo.', '.......owkwwo', '.......owwwo.', '........owo..',
+      '........owo..', '..oooooo.owo.', '.owwwwwwwwwo.', 'owwwwwwwwwwo.', '.oswwwwwwsso.', '..s.s..s..s..',
+      '..s.s..s..s..', '..f.f..f..f..'],
+    ['........t.t..', '........o.o..', '.......owwwo.', '.......owkwwo', '.......owwwo.', '........owo..',
+      '........owo..', '..oooooo.owo.', '.owwwwwwwwwo.', 'owwwwwwwwwwo.', '.oswwwwwwsso.', '...ss...ss...',
+      '...ss...ss...', '...ff...ff...'],
+  ];
+  const LLAMA_GRAZE = ['.............', '.............', '.............', '.............', '.............',
+    '.............', '.............', '..oooooooo...', '.owwwwwwwwo..', 'owwwwwwwwwwo.', '.oswwwwwwswot',
+    '..s.s..s..owo', '..s.s..s..owk', '..f.f..f..fow'];
+  const LLAMA_FUR = [['#f4efe6', '#d6c8b4'], ['#b98b5e', '#8f6640'], ['#6a5a50', '#4c4038'], ['#e9dcc4', '#c9b494']];
+  const TASSELS = ['#e8344a', '#f2c230', '#3aa0e0', '#e85ab8'];
+  // A vizcacha sitting on the rocks (ears up / ears down), with its curled tail.
+  const VIZCACHA = [
+    ['.o.o.....', '.o.o.....', 'owwwo....', 'owkwwo...', '.owwwwo..', '.owwwwwo.', '.owwwwwot', '..ff.ff.t'],
+    ['.........', '.oo......', 'owwwo....', 'owkwwo...', '.owwwwo..', '.owwwwwo.', '.owwwwwot', '..ff.ff.t'],
+  ];
+  const VIZCACHA_C = { o: '#3a3028', w: '#b8ab98', k: '#0a0502', f: '#4a3e34', t: '#8a7a68' };
+  // A condor feather drifting down (two tilts).
+  const FEATHER = [['.oo', 'oo.', 'o..'], ['oo.', '.oo', '..o']];
+
   // The baby capybara (half the size of its mum, a bigger head), facing right.
   const BABY = {
     walk: [
@@ -555,6 +579,8 @@
     const palFor = (m, w) => (m === 'sunset' && w.dawn && TABLE.dawn ? TABLE.dawn : TABLE[m]);
     let P = adjust(palFor(mode, world), mode, world);
     let perchSpot = null, cityLights = [];
+    // Andean life: the ground band and rock (for placing it), dust devils, a llama herd, a vizcacha.
+    let ground = null, devils = [], herd = null, vizcacha = null;
     const scenic = mode !== 'none';
     const report = () => {
       if (o.onWorld) { o.onWorld({ mode, weather: world.weather, season: world.season, holiday: world.holiday }); }
@@ -1043,6 +1069,8 @@
         }
       }
       perchSpot = { x: rx0 + rw * 0.45, y: rockTop(Math.round(rx0 + rw * 0.45)), w: rw };
+      ground = { fgTop, pathTop, rockX: rx0, rockW: rw, rockBase: rBase, rockTop };
+      devils = []; herd = null; vizcacha = null;
 
       // Paja brava: golden spiky tussocks behind the path (and a few in front).
       const tufts = Math.round(W / 6);
@@ -1064,15 +1092,99 @@
       buildWeather(rf);
     }
 
-    // Andean life on top of the front layer: the city lights at dusk and at night.
+    // Andean life on top of the front layer: dust devils, llamas, a vizcacha, and the
+    // city lights at dusk and at night.
     function drawAndes() {
       if (habitat !== 'andes') { return; }
+      if (ground) { drawDevils(); drawHerd(); drawVizcacha(); }
       if (mode === 'night' || mode === 'sunset') {
         for (const l of cityLights) {
           if (mode === 'sunset' && (l.p * 10) % 3 > 1) { continue; } // only some lit at dusk
           if (Math.sin(t * 0.05 + l.p) > -0.7) { dot(sc, l.c, l.x, l.y); }
         }
       }
+    }
+
+    // Dust devils: whirlwinds of dust crossing the dry altiplano (thermals the condor rides).
+    function drawDevils() {
+      const dry = (mode === 'scene' || mode === 'sunset') && !P.wet && !P.fog;
+      if (dry && anim && devils.length === 0 && Math.random() < 1 / 1800) {
+        const d = Math.random() < 0.5 ? 1 : -1, h = Math.round(H * (0.3 + Math.random() * 0.15));
+        devils.push({ x: d > 0 ? -6 : W + 6, vx: d * (0.15 + Math.random() * 0.15), h, life: 900, base: ground.pathTop + 1 });
+      }
+      const haze = mix(P.dust[0], '#ffffff', 0.25), streak = mix(P.dust[0], '#ffffff', 0.5);
+      devils = devils.filter((dv) => {
+        if (anim) { dv.x += dv.vx + Math.sin(t * 0.03) * 0.1; dv.life--; }
+        const fade = Math.min(1, dv.life / 120, (t + 1) / 1); // fades out at the end
+        for (let k = 0; k < dv.h; k++) {
+          const r = 1.5 + k * 0.16 + Math.sin(k * 0.3 + t * 0.05) * 0.8; // a funnel, wider at the top
+          const a = t * 0.45 + k * 0.55, wob = Math.sin(t * 0.07 + k * 0.08) * k * 0.06;
+          const dens = (1 - k / dv.h) * fade, y = dv.base - k, cx = dv.x + wob;
+          for (let dx = -Math.ceil(r); dx <= Math.ceil(r); dx++) { // hazy body
+            const x = Math.round(cx + dx), e = 1 - Math.abs(dx) / (r + 0.5);
+            if (e > 0 && dith(x, y + (t >> 1), e * 0.75 * dens)) { dot(sc, haze, x, y); }
+          }
+          for (let j = 0; j < 2; j++) { // the spinning streaks
+            const x = Math.round(cx + Math.cos(a + j * Math.PI) * r);
+            if (dith(x, y, 0.95 * dens)) { dot(sc, streak, x, y); }
+          }
+        }
+        if (anim && t % 3 === 0) { // kicked-up dust at its foot
+          add({ k: 'dust', x: dv.x + rand(-3, 3), y: dv.base - rand(0, 2), vx: rand(-0.3, 0.3), vy: -rand(0.1, 0.3), life: 8, c: P.dust[0] });
+        }
+        return dv.life > 0 && dv.x > -20 && dv.x < W + 20;
+      });
+    }
+
+    // A small herd of llamas crossing the altiplano, stopping now and then to graze.
+    function drawHerd() {
+      const day = (mode === 'scene' || mode === 'sunset') && !P.storm;
+      if (day && anim && !herd && Math.random() < 1 / 2600) {
+        const d = Math.random() < 0.5 ? 1 : -1, n = 1 + Math.floor(Math.random() * 3), m = [];
+        for (let i = 0; i < n; i++) {
+          const fur = LLAMA_FUR[Math.floor(Math.random() * LLAMA_FUR.length)];
+          const edge = mix(fur[1], '#1a1410', 0.5); // a soft outline in the wool's own shade
+          m.push({ c: { o: edge, w: fur[0], s: fur[1], k: '#0a0502', f: mix(edge, '#000000', 0.3), t: TASSELS[(i + Math.floor(Math.random() * 4)) % 4] }, off: i * 17 + Math.floor(Math.random() * 5), graze: 0 });
+        }
+        herd = { x: d > 0 ? -8 : W + 8, d, m, y: ground.fgTop + Math.round((ground.pathTop - ground.fgTop) * 0.55) };
+      }
+      if (!herd) { return; }
+      const hd = herd;
+      let anyWalking = false;
+      for (const l of hd.m) {
+        if (anim) {
+          if (l.graze > 0) { l.graze--; }
+          else if (Math.random() < 1 / 300) { l.graze = 80 + Math.floor(Math.random() * 120); }
+        }
+        if (!l.graze) { anyWalking = true; }
+      }
+      if (anim && anyWalking) { hd.x += hd.d * 0.18; }
+      for (const l of hd.m) {
+        const x = Math.round(hd.x - hd.d * l.off * HK), bm = l.graze ? LLAMA_GRAZE : LLAMA[(t >> 3) % 2];
+        blitK(sc, bm, l.c, x - 6 * HK, hd.y - bm.length * HK + 1, hd.d < 0, HK);
+      }
+      if (hd.x < -60 - hd.m.length * 40 || hd.x > W + 60 + hd.m.length * 40) { herd = null; }
+    }
+
+    // A vizcacha peeking out by the condor's rock; it hides when the condor comes close.
+    function drawVizcacha() {
+      const g = ground, pet = last;
+      const near = pet && Math.abs(pet.x / PX + o.pet / PX / 2 - (g.rockX + g.rockW / 2)) < g.rockW && (pet.alt || 0) < H * PX * 0.6;
+      if (!vizcacha && anim && !P.wet && mode !== 'night' && Math.random() < 1 / 1500) {
+        vizcacha = { life: 300 + Math.floor(Math.random() * 300), ears: 0 };
+      }
+      if (!vizcacha) { return; }
+      const v = vizcacha;
+      if (anim) { v.life--; if (Math.random() < 1 / 60) { v.ears = 6; } if (v.ears > 0) { v.ears--; } }
+      if (v.life <= 0 || near) { vizcacha = null; return; }
+      // Sits on a low ledge at the rock's left foot.
+      const x = g.rockX - 9 * HK, y = g.rockBase;
+      blitK(sc, VIZCACHA[v.ears > 0 ? 1 : 0], VIZCACHA_C, x, y - 8 * HK + 1, false, HK);
+    }
+
+    // Where a thermal rises (a dust devil), for the condor to circle over: CSS x, or null.
+    function thermalX() {
+      return devils.length ? devils[0].x * PX : null;
     }
 
     // Rain, snow and fog: particles over the scene, rebuilt with the layers.
@@ -1568,6 +1680,10 @@
       const age = q.max - q.life;
       if (q.k === 'heart') { q.vx = Math.sin(age * 0.6) * 0.3; }
       if (q.k === 'steam') { q.vx = Math.sin(age * 0.8 + q.p) * 0.25; }
+      if (q.k === 'feather') { // sways as it drifts down, then rests on the ground
+        if (q.y >= q.floor) { q.vx = 0; q.vy = 0; q.y = q.floor; }
+        else { q.vx = Math.sin(age * 0.12 + q.p) * 0.35; }
+      }
       q.x += q.vx || 0; q.y += q.vy || 0; q.vy += q.g || 0;
       if (q.k === 'fruit' && q.y >= q.floor) { q.y = q.floor; q.vy = -q.vy * 0.45; q.vx *= 0.6; }
       const x = Math.round(q.x), y = Math.round(q.y);
@@ -1619,6 +1735,9 @@
         case 'splash':
         case 'drip':
           dot(fc, q.c, x, y);
+          break;
+        case 'feather':
+          if (blink || q.life > 30) { blit(fc, FEATHER[(age >> 3) % 2], { o: '#1c1c26' }, x, y); }
           break;
         case 'alert':
           if (blink) { blit(fc, ALERT, ALERT_C, x - 1, y - 7 - (age < 3 ? age % 2 : 0)); }
@@ -1722,6 +1841,7 @@
     // Automatic effects driven by the pet's state.
     function react(p) {
       const g = geo(p);
+      const hd = condor ? headAnchor(p) : null; // the condor's head, for its effects
       if (p.state !== prevState) {
         if (p.state === 'celebrate') {
           for (let i = 0; i < 24; i++) {
@@ -1742,7 +1862,6 @@
       }
       // The sprites carry no loose details (zzz, steam, sweat): drawn here instead.
       const side = (f) => g.L + g.w * (p.face > 0 ? f : 1 - f);
-      const hd = condor ? headAnchor(p) : null;
       if (p.state === 'sleep' && t % 20 === 0) {
         add(hd ? { k: 'zz', x: hd.x + 4 * p.face, y: hd.y - 6, vx: 0.12 * p.face, vy: -0.16, life: 26 }
           : { k: 'zz', x: side(0.8), y: row(o.base + o.pet * 0.5) - 4, vx: 0.12 * p.face, vy: -0.16, life: 26 });
@@ -1766,6 +1885,13 @@
         }
       }
       const onGround = !(p.alt > 1); // no dust in the air
+      // The condor loses a feather now and then when it flaps hard or gets a fright.
+      if (condor && p.pose === 'fly' && Math.random() < (p.state === 'scared' ? 1 / 8 : p.state === 'run' ? 1 / 70 : 0)) {
+        add({
+          k: 'feather', x: g.cx + rand(-4, 4), y: g.foot - o.pet / PX * 0.35, vx: rand(-0.2, 0.2), vy: 0.12,
+          life: 160, p: rand(0, 6), floor: row(o.feet) + 1,
+        });
+      }
       if (onGround && p.moving && p.state === 'run' && t % 3 === 0) { dust(p, 2, -p.face); }
       if (onGround && p.moving && p.state === 'walk' && t % 14 === 0) { dust(p, 1, -p.face); }
     }
@@ -1860,6 +1986,7 @@
       // A puff of dust at the pet's feet (the condor touching down).
       puff(p) { if (anim) { dust(Object.assign({}, p, { bottom: 4, alt: 0 }), 6); } },
       // The condor's rock: centre x and the CSS bottom offset of its top, or null.
+      thermal() { return habitat === 'andes' ? thermalX() : null; },
       perch() {
         if (habitat !== 'andes' || !perchSpot || !scenic) { return null; }
         return { x: perchSpot.x * PX, bottom: (H - perchSpot.y) * PX };

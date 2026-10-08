@@ -13,7 +13,7 @@
     "vscode": "^1.74.0"
   },
   "categories": ["Other"],
-  "keywords": ["capybara", "capibara", "pet", "mascota", "fun", "animation"],
+  "keywords": ["capybara", "capibara", "condor", "cóndor", "pet", "mascota", "pixel art", "illimani", "bolivia", "fun", "animation"],
   "icon": "media/icon.png",
   "galleryBanner": {
     "color": "#FBE9C8",
@@ -60,158 +60,263 @@
         "category": "%cmd.category%"
       }
     ],
-    "configuration": {
-      "title": "%config.title%",
-      "properties": {
-        "capibaraPet.enabled": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.enabled.desc%"
-        },
-        "capibaraPet.pet": {
-          "type": "string",
-          "default": "capybara",
-          "enum": ["capybara", "condor"],
-          "enumDescriptions": [
-            "The capybara, in its wetland by the lake.",
-            "The Andean condor, soaring over the Illimani and La Paz."
-          ],
-          "markdownDescription": "%config.pet.desc%"
-        },
-        "capibaraPet.size": {
-          "type": "number",
-          "default": 84,
-          "minimum": 40,
-          "maximum": 160,
-          "markdownDescription": "%config.size.desc%"
-        },
-        "capibaraPet.speed": {
-          "type": "number",
-          "default": 1,
-          "minimum": 0.25,
-          "maximum": 3,
-          "markdownDescription": "%config.speed.desc%"
-        },
-        "capibaraPet.coffeeAfterSeconds": {
-          "type": "number",
-          "default": 6,
-          "minimum": 1,
-          "maximum": 600,
-          "markdownDescription": "%config.coffeeAfterSeconds.desc%"
-        },
-        "capibaraPet.sleepAfterSeconds": {
-          "type": "number",
-          "default": 15,
-          "minimum": 2,
-          "maximum": 3600,
-          "markdownDescription": "%config.sleepAfterSeconds.desc%"
-        },
-        "capibaraPet.reactToErrors": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.reactToErrors.desc%"
-        },
-        "capibaraPet.reactToDebug": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.reactToDebug.desc%"
-        },
-        "capibaraPet.reactToGit": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.reactToGit.desc%"
-        },
-        "capibaraPet.reactToTasks": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.reactToTasks.desc%"
-        },
-        "capibaraPet.name": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "%config.name.desc%"
-        },
-        "capibaraPet.bubbles": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.bubbles.desc%"
-        },
-        "capibaraPet.statusBar": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.statusBar.desc%"
-        },
-        "capibaraPet.background": {
-          "type": "string",
-          "default": "time",
-          "enum": ["time", "scene", "sunset", "night", "auto", "solid", "transparent"],
-          "enumDescriptions": [
-            "Follow the local time: day (7:00–17:30), sunset (17:30–19:30, and dawn 6:00–7:00) and night. Switches by itself.",
-            "Pixel-art day by the lake: dithered sky, sun, drifting clouds, birds, hills, reeds and a meadow.",
-            "Pixel-art sunset: purple-orange sky, the sun setting behind the hills, glowing water and the first stars.",
-            "Pixel-art night: twinkling stars, moon glitter on the lake, shooting stars and fireflies.",
-            "Match the editor theme: day on light themes, night on dark themes.",
-            "Solid colour from the editor theme.",
-            "No background (blends with the panel)."
-          ],
-          "markdownDescription": "%config.background.desc%"
-        },
-        "capibaraPet.color": {
-          "type": "string",
-          "default": "classic",
-          "enum": ["classic", "chocolate", "golden", "cream", "ash"],
-          "enumDescriptions": [
-            "The classic warm brown capybara.",
-            "Dark chocolate brown.",
-            "Golden, sandy fur.",
-            "Pale cream, almost white.",
-            "Ash grey."
-          ],
-          "markdownDescription": "%config.color.desc%"
-        },
-        "capibaraPet.baby": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.baby.desc%"
-        },
-        "capibaraPet.sounds": {
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "%config.sounds.desc%"
-        },
-        "capibaraPet.weather": {
-          "type": "string",
-          "default": "auto",
-          "enum": ["auto", "clear", "cloudy", "rain", "storm", "fog", "snow"],
-          "enumDescriptions": [
-            "Changes by itself every few hours: mostly clear, sometimes cloudy, rain, a storm or morning fog — and snow in winter.",
-            "Always clear skies.",
-            "Overcast: more clouds, a greyer sky.",
-            "Rain over the scene and drops rippling the lake.",
-            "Heavy rain with the odd flash of lightning behind the hills.",
-            "Banks of fog drifting over the lake.",
-            "Falling snow, white hills and a frozen lake (no swimming)."
-          ],
-          "markdownDescription": "%config.weather.desc%"
-        },
-        "capibaraPet.seasons": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.seasons.desc%"
-        },
-        "capibaraPet.hemisphere": {
-          "type": "string",
-          "default": "auto",
-          "enum": ["auto", "north", "south"],
-          "enumDescriptions": [
-            "Guess it from your time zone.",
-            "Northern hemisphere.",
-            "Southern hemisphere: seasons are flipped and the moon is seen mirrored."
-          ],
-          "markdownDescription": "%config.hemisphere.desc%"
+    "configuration": [
+      {
+        "title": "%config.section.pet%",
+        "properties": {
+          "capibaraPet.enabled": {
+            "type": "boolean",
+            "default": true,
+            "order": 0,
+            "markdownDescription": "%config.enabled.desc%"
+          },
+          "capibaraPet.pet": {
+            "type": "string",
+            "default": "capybara",
+            "enum": [
+              "capybara",
+              "condor"
+            ],
+            "order": 1,
+            "enumItemLabels": [
+              "%config.pet.capybara.label%",
+              "%config.pet.condor.label%"
+            ],
+            "enumDescriptions": [
+              "%config.pet.capybara.desc%",
+              "%config.pet.condor.desc%"
+            ],
+            "markdownDescription": "%config.pet.desc%"
+          },
+          "capibaraPet.name": {
+            "type": "string",
+            "default": "",
+            "order": 2,
+            "markdownDescription": "%config.name.desc%"
+          },
+          "capibaraPet.size": {
+            "type": "number",
+            "default": 84,
+            "minimum": 40,
+            "maximum": 160,
+            "order": 3,
+            "markdownDescription": "%config.size.desc%"
+          },
+          "capibaraPet.speed": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.25,
+            "maximum": 3,
+            "order": 4,
+            "markdownDescription": "%config.speed.desc%"
+          }
+        }
+      },
+      {
+        "title": "%config.section.scene%",
+        "properties": {
+          "capibaraPet.background": {
+            "type": "string",
+            "default": "time",
+            "enum": [
+              "time",
+              "scene",
+              "sunset",
+              "night",
+              "auto",
+              "solid",
+              "transparent"
+            ],
+            "order": 0,
+            "enumItemLabels": [
+              "%config.background.time.label%",
+              "%config.background.scene.label%",
+              "%config.background.sunset.label%",
+              "%config.background.night.label%",
+              "%config.background.auto.label%",
+              "%config.background.solid.label%",
+              "%config.background.transparent.label%"
+            ],
+            "enumDescriptions": [
+              "%config.background.time.desc%",
+              "%config.background.scene.desc%",
+              "%config.background.sunset.desc%",
+              "%config.background.night.desc%",
+              "%config.background.auto.desc%",
+              "%config.background.solid.desc%",
+              "%config.background.transparent.desc%"
+            ],
+            "markdownDescription": "%config.background.desc%"
+          },
+          "capibaraPet.weather": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "clear",
+              "cloudy",
+              "rain",
+              "storm",
+              "fog",
+              "snow"
+            ],
+            "order": 1,
+            "enumItemLabels": [
+              "%config.weather.auto.label%",
+              "%config.weather.clear.label%",
+              "%config.weather.cloudy.label%",
+              "%config.weather.rain.label%",
+              "%config.weather.storm.label%",
+              "%config.weather.fog.label%",
+              "%config.weather.snow.label%"
+            ],
+            "enumDescriptions": [
+              "%config.weather.auto.desc%",
+              "%config.weather.clear.desc%",
+              "%config.weather.cloudy.desc%",
+              "%config.weather.rain.desc%",
+              "%config.weather.storm.desc%",
+              "%config.weather.fog.desc%",
+              "%config.weather.snow.desc%"
+            ],
+            "markdownDescription": "%config.weather.desc%"
+          },
+          "capibaraPet.seasons": {
+            "type": "boolean",
+            "default": true,
+            "order": 2,
+            "markdownDescription": "%config.seasons.desc%"
+          },
+          "capibaraPet.hemisphere": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "north",
+              "south"
+            ],
+            "order": 3,
+            "enumItemLabels": [
+              "%config.hemisphere.auto.label%",
+              "%config.hemisphere.north.label%",
+              "%config.hemisphere.south.label%"
+            ],
+            "enumDescriptions": [
+              "%config.hemisphere.auto.desc%",
+              "%config.hemisphere.north.desc%",
+              "%config.hemisphere.south.desc%"
+            ],
+            "markdownDescription": "%config.hemisphere.desc%"
+          }
+        }
+      },
+      {
+        "title": "%config.section.behaviour%",
+        "properties": {
+          "capibaraPet.coffeeAfterSeconds": {
+            "type": "number",
+            "default": 6,
+            "minimum": 1,
+            "maximum": 600,
+            "order": 0,
+            "markdownDescription": "%config.coffeeAfterSeconds.desc%"
+          },
+          "capibaraPet.sleepAfterSeconds": {
+            "type": "number",
+            "default": 15,
+            "minimum": 2,
+            "maximum": 3600,
+            "order": 1,
+            "markdownDescription": "%config.sleepAfterSeconds.desc%"
+          },
+          "capibaraPet.bubbles": {
+            "type": "boolean",
+            "default": true,
+            "order": 2,
+            "markdownDescription": "%config.bubbles.desc%"
+          },
+          "capibaraPet.sounds": {
+            "type": "boolean",
+            "default": false,
+            "order": 3,
+            "markdownDescription": "%config.sounds.desc%"
+          },
+          "capibaraPet.statusBar": {
+            "type": "boolean",
+            "default": true,
+            "order": 4,
+            "markdownDescription": "%config.statusBar.desc%"
+          }
+        }
+      },
+      {
+        "title": "%config.section.reactions%",
+        "properties": {
+          "capibaraPet.reactToErrors": {
+            "type": "boolean",
+            "default": true,
+            "order": 0,
+            "markdownDescription": "%config.reactToErrors.desc%"
+          },
+          "capibaraPet.reactToDebug": {
+            "type": "boolean",
+            "default": true,
+            "order": 1,
+            "markdownDescription": "%config.reactToDebug.desc%"
+          },
+          "capibaraPet.reactToGit": {
+            "type": "boolean",
+            "default": true,
+            "order": 2,
+            "markdownDescription": "%config.reactToGit.desc%"
+          },
+          "capibaraPet.reactToTasks": {
+            "type": "boolean",
+            "default": true,
+            "order": 3,
+            "markdownDescription": "%config.reactToTasks.desc%"
+          }
+        }
+      },
+      {
+        "title": "%config.section.capybara%",
+        "properties": {
+          "capibaraPet.color": {
+            "type": "string",
+            "default": "classic",
+            "enum": [
+              "classic",
+              "chocolate",
+              "golden",
+              "cream",
+              "ash"
+            ],
+            "order": 0,
+            "enumItemLabels": [
+              "%config.color.classic.label%",
+              "%config.color.chocolate.label%",
+              "%config.color.golden.label%",
+              "%config.color.cream.label%",
+              "%config.color.ash.label%"
+            ],
+            "enumDescriptions": [
+              "%config.color.classic.desc%",
+              "%config.color.chocolate.desc%",
+              "%config.color.golden.desc%",
+              "%config.color.cream.desc%",
+              "%config.color.ash.desc%"
+            ],
+            "markdownDescription": "%config.color.desc%"
+          },
+          "capibaraPet.baby": {
+            "type": "boolean",
+            "default": true,
+            "order": 1,
+            "markdownDescription": "%config.baby.desc%"
+          }
         }
       }
-    }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

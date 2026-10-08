@@ -9,6 +9,8 @@
 
 A little capybara pet that lives in a panel inside your VS Code editor. It strolls around calmly, runs while you type, gets scared when there are errors, sips its coffee during short breaks, and falls asleep if you leave it alone for a while.
 
+Prefer wings? Pick the **Andean condor** instead — it soars over the Illimani and La Paz ([see below](#-the-andean-condor)).
+
 Animated with spritesheets on a procedural pixel-art stage — flicker-free and never in the way of your code.
 
 <p align="center">
@@ -55,28 +57,50 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Capibara Pet
 
 Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pet". Changes apply live.
 
+**Pet**
+
 | Setting | Default | What it does |
 |---------|:-------:|--------------|
-| `capibaraPet.enabled` | `true` | Show the capybara. Turn off to hide it without uninstalling. |
+| `capibaraPet.enabled` | `true` | Show your pet. Turn it off to hide it without uninstalling. |
 | `capibaraPet.pet` | `capybara` | Your pet: the `capybara` (by the lake) or the Andean `condor` (over the Illimani). |
-| `capibaraPet.size` | `84` | Size of the capybara, in pixels (40–160). |
-| `capibaraPet.speed` | `1` | Walk/run speed multiplier (0.25–3). |
-| `capibaraPet.coffeeAfterSeconds` | `6` | Idle seconds before the coffee break. |
-| `capibaraPet.sleepAfterSeconds` | `15` | Idle seconds before falling asleep. |
-| `capibaraPet.reactToErrors` | `true` | Whether it gets scared when the file has errors. |
-| `capibaraPet.reactToDebug` | `true` | Whether it celebrates when a debug session starts. |
+| `capibaraPet.name` | `""` | A name for your pet (shown on hover and in the status bar). |
+| `capibaraPet.size` | `84` | Size in pixels (40–160). `84` is perfectly crisp for both pets. |
+| `capibaraPet.speed` | `1` | Movement speed multiplier (0.25–3): walking for the capybara, flying for the condor. |
+
+**Scene**
+
+| Setting | Default | What it does |
+|---------|:-------:|--------------|
+| `capibaraPet.background` | `time` | Follow the time of day, always day / sunset / night, day or night by theme, a solid colour, or transparent. |
+| `capibaraPet.weather` | `auto` | Automatic (changes every few hours), or always clear, cloudy, rain, storm, fog or snow. |
+| `capibaraPet.seasons` | `true` | Seasonal touches and holiday surprises. |
+| `capibaraPet.hemisphere` | `auto` | North or south, for the seasons and the moon (`auto` guesses from your time zone). |
+
+**Behaviour**
+
+| Setting | Default | What it does |
+|---------|:-------:|--------------|
+| `capibaraPet.coffeeAfterSeconds` | `6` | Idle seconds before a break: coffee or a swim for the capybara, sunbathing for the condor. |
+| `capibaraPet.sleepAfterSeconds` | `15` | Idle seconds before it falls asleep. |
+| `capibaraPet.bubbles` | `true` | Little speech bubbles (saving, sleeping, petting…). |
+| `capibaraPet.sounds` | `false` | Tiny 8-bit sound effects (they start after your first click in the panel). |
+| `capibaraPet.statusBar` | `true` | A status bar item (🦫 / 🦅) mirroring its mood, with the weather and season on hover. |
+
+**Reactions**
+
+| Setting | Default | What it does |
+|---------|:-------:|--------------|
+| `capibaraPet.reactToErrors` | `true` | Gets scared when the active file has errors. |
+| `capibaraPet.reactToDebug` | `true` | Celebrates when a debug session starts. |
 | `capibaraPet.reactToGit` | `true` | Celebrates commits and pushes, gets scared by merge conflicts, hops when you switch branch. |
 | `capibaraPet.reactToTasks` | `true` | Celebrates passing builds/tests and gets scared by failing ones (tasks, and commands like `npm test` in the terminal). |
-| `capibaraPet.name` | `""` | Give your capybara a name (shown on hover and in the status bar). |
-| `capibaraPet.bubbles` | `true` | Show small speech bubbles (saving, sleeping, petting…). |
-| `capibaraPet.statusBar` | `true` | Show a status bar item that mirrors the current mood. |
-| `capibaraPet.background` | `time` | Panel backdrop: `time` (follows the local time: day, sunset, night), `scene` (day), `sunset`, `night`, `auto` (day/night by theme), `solid`, or `transparent`. |
-| `capibaraPet.color` | `classic` | Fur colour: `classic`, `chocolate`, `golden`, `cream` or `ash`. |
+
+**Capybara only**
+
+| Setting | Default | What it does |
+|---------|:-------:|--------------|
+| `capibaraPet.color` | `classic` | Fur colour: classic, chocolate, golden, cream or ash. |
 | `capibaraPet.baby` | `true` | A baby capybara that follows yours around (and rides on its back when it swims). |
-| `capibaraPet.sounds` | `false` | Tiny 8-bit sound effects (they start after your first click in the panel). |
-| `capibaraPet.weather` | `auto` | Scene weather: `auto` (changes every few hours), or always `clear`, `cloudy`, `rain`, `storm`, `fog` or `snow`. |
-| `capibaraPet.seasons` | `true` | Seasonal touches (blossoms, autumn leaves, winter) and holiday surprises. |
-| `capibaraPet.hemisphere` | `auto` | `north` / `south` for the seasons and the moon; `auto` guesses from your time zone. |
 
 > Tip: **click anywhere in the panel** to pet the capybara — it hops with a ❤️.
 > The capybara also **runs faster the faster you type**.
@@ -152,9 +176,23 @@ There are a couple of surprises too: keep it calm for a while in daylight and yo
 
 ## 🦅 The Andean condor
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/condor-hero.png" alt="The Andean condor soaring over the Illimani" width="800">
+</p>
+
 Prefer wings? Set `capibaraPet.pet` to `condor`. The condor has its own, finer pixel art and lives in its own habitat: **the Illimani over La Paz** — the snowy three-summit massif, brown foothills and eroded badlands, the city on the slopes (its lights twinkle at night) and the altiplano with paja brava.
 
-It soars in slow circles riding thermals and flaps when you type; on a break it flies to its rock to sunbathe with its wings open and then sleeps there; it spreads its wings when you save or commit, and shoots up into the sky when something fails. Drag it anywhere in the sky — or drop it on the ground and watch it hop.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/condor-moments.png" alt="Sunbathing on its rock, soaring at dawn, asleep at night, celebrating in a chullo at sunset" width="800">
+</p>
+
+It soars in slow circles riding thermals and flaps when you type; on a break it flies to its rock to **sunbathe with its wings open** and then sleeps there; it spreads its wings when you save or commit, and shoots up into the sky when something fails. It brakes with open wings to land and pushes off to take flight. Drag it anywhere in the sky — or drop it on the ground and watch it hop. At dawn the sun rises behind the Illimani; at dusk the mountain glows pink and gold. Pet it five times in a row for a little surprise 🧶.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/condor-life.png" alt="The condor circling over a dust devil while a llama crosses the altiplano" width="560">
+</p>
+
+The altiplano is alive too: **dust devils** whirl across it — rising air the condor loves to circle over — **llamas** with coloured wool tassels wander by, stopping to graze, and a **vizcacha** peeks out by the rock.
 
 ## Install from the Marketplace
 

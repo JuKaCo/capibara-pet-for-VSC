@@ -35,6 +35,13 @@ All notable changes to the **Capibara Pet** extension are documented here.
   a vizcacha peeks out at the foot of the condor's rock (and hides when it comes close).
 - **Feathers**: the condor loses one now and then when it flaps hard or gets a fright;
   it drifts down swaying and rests on the ground.
+- **README**: screenshots of the condor (soaring, its rock, dawn, night, the chullo,
+  the altiplano's life) and a description that introduces both pets.
+- **Clearer settings**: grouped into sections (Pet, Scene, Behaviour, Reactions,
+  Capybara only) in a logical order instead of alphabetically; descriptions written for
+  both pets; readable, translated labels in every dropdown (e.g. "Follow the time of
+  day", "Always day"). Setting names and values are unchanged, so existing settings keep
+  working.
 
 ## [0.10.0]
 

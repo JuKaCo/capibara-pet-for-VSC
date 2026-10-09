@@ -1,0 +1,20 @@
+# Type-check, unit tests and the headless-Chrome smoke test of the webview (npm test).
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The runner image ships Google Chrome at /usr/bin/google-chrome, which test/harness.js finds.
+      - run: npm test

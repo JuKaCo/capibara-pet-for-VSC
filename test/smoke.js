@@ -61,6 +61,7 @@ for (const pet of PETS) {
       let out = '';
       try {
         out = execFileSync(browser, ['--headless=new', '--disable-gpu', '--allow-file-access-from-files',
+          ...(process.env.CI ? ['--no-sandbox'] : []), // CI runners (Ubuntu 24.04) block Chrome's sandbox
           `--user-data-dir=${path.join(dir, 'profile')}`, '--window-size=900,330', '--virtual-time-budget=16000',
           '--dump-dom', 'file:///' + file.replace(/\\/g, '/')], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000 });
       } catch (e) { out = String(e.stdout || ''); }

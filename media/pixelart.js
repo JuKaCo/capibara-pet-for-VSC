@@ -1456,14 +1456,18 @@
     const CRUX = [[0, -1, 2], [0.15, 1.1, 2], [-0.6, 0.15, 2], [0.55, -0.15, 1], [0.3, 0.45, 0], [-2.4, 0.95, 2], [-1.7, 0.75, 2]];
     function drawSouthernCross() {
       if (mode !== 'night' || !P.star || P.wet || !(habitat === 'andes' || world.south)) { return; }
-      const cx = W * 0.32, cy = horizon * 0.3, k = Math.max(3, horizon * 0.07);
-      CRUX.forEach(([dx, dy, mag], i) => {
-        const x = Math.round(cx + dx * k), y = Math.round(cy + dy * k);
-        if (x < 1 || x >= W - 1 || y < 1 || (skyTop && y >= skyTop(x) - 1)) { return; }
-        const tw = Math.sin(t * (0.05 + i * 0.013) + i) > -0.6;
+      const cx = W * 0.32, cy = horizon * 0.3, k = Math.max(5, horizon * 0.13);
+      const pts = CRUX.map(([dx, dy, mag]) => ({ x: Math.round(cx + dx * k), y: Math.round(cy + dy * k), mag }));
+      if (!stars.cruxClear) { // give it room: no background stars right around its stars
+        stars = stars.filter((s) => pts.every((q) => Math.abs(s.x - q.x) > 3 || Math.abs(s.y - q.y) > 3));
+        stars.cruxClear = true;
+      }
+      pts.forEach(({ x, y, mag }, i) => {
+        if (x < 2 || x >= W - 2 || y < 2 || (skyTop && y >= skyTop(x) - 2)) { return; }
+        const tip = Math.sin(t * (0.05 + i * 0.013) + i) > -0.4 ? P.star[1] : P.star[0]; // the long arms twinkle
         dot(sc, P.star[2], x, y);
-        if (mag >= 1 && tw) { dot(sc, P.star[2], x - 1, y); dot(sc, P.star[2], x + 1, y); dot(sc, P.star[2], x, y - 1); dot(sc, P.star[2], x, y + 1); }
-        if (mag >= 2 && HK > 1 && tw) { dot(sc, P.star[1], x - 2, y); dot(sc, P.star[1], x + 2, y); dot(sc, P.star[1], x, y - 2); dot(sc, P.star[1], x, y + 2); }
+        if (mag >= 1) { dot(sc, P.star[2], x - 1, y); dot(sc, P.star[2], x + 1, y); dot(sc, P.star[2], x, y - 1); dot(sc, P.star[2], x, y + 1); }
+        if (mag >= 2) { dot(sc, tip, x - 2, y); dot(sc, tip, x + 2, y); dot(sc, tip, x, y - 2); dot(sc, tip, x, y + 2); }
       });
     }
 

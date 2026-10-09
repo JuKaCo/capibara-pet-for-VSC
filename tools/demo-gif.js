@@ -1,9 +1,10 @@
 // Records the README demo GIF from the real webview in headless Chrome (no build needed):
 // every <step> ms the scene, the pet sprite and the effects are composited into one frame,
-// then tools/gif.py turns the frames into a crisp 2x GIF with one shared palette.
+// then tools/gif.py turns the frames into a crisp, scaled-up GIF with one shared palette.
 //
 //   node tools/demo-gif.js            -> docs/condor.gif
 //   node tools/demo-gif.js capybara   -> docs/capybara.gif
+// Needs Chrome/Edge/Chromium (or CHROME_PATH) and Python with Pillow (`pip install pillow`).
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -12,10 +13,16 @@ const { execFileSync } = require('child_process');
 const { ROOT, renderHtml, findBrowser } = require('../test/harness');
 
 const pet = process.argv[2] || 'condor';
-const START = 400, FRAMES = 170, STEP = 100;
-// What happens on screen: soar, rest on the rock by the chick, celebrate a test run, take off.
-const EVENTS = [[11500, 'celebrate', 'tests ✓'], [15000, 'typing'], [15400, 'typing']];
-const settings = { pet, background: 'scene', weather: 'clear', seasons: false, coffeeAfterSeconds: 4, sleepAfterSeconds: 3600 };
+const START = 400, STEP = 100;
+// What happens on screen, per pet: [ms, message type, bubble text].
+const SCRIPTS = {
+  // Soar, rest on the rock by the chick, celebrate a test run, take off again.
+  condor: { frames: 170, scale: 2, coffee: 4, events: [[11500, 'celebrate', 'tests ✓'], [15000, 'typing'], [15400, 'typing']] },
+  // Stroll, share a watermelon with the baby, celebrate a commit, swim, come back out.
+  capybara: { frames: 200, scale: 4, coffee: 600, events: [[1500, 'feed'], [9000, 'celebrate', 'commit!'], [11000, 'swim'], [17500, 'typing'], [17900, 'typing']] },
+};
+const { frames: FRAMES, scale, coffee, events: EVENTS } = SCRIPTS[pet]; // the capybara's world is on a coarser grid
+const settings = { pet, background: 'scene', weather: 'clear', seasons: false, coffeeAfterSeconds: coffee, sleepAfterSeconds: 3600 };
 
 const RECORDER = `<script>(() => {
   ${JSON.stringify(EVENTS)}.forEach(([t, type, text]) => setTimeout(() => window.postMessage({ type, text }, '*'), t));
@@ -61,5 +68,5 @@ fs.mkdirSync(frames);
 m[1].split(' ').forEach((u, i) =>
   fs.writeFileSync(path.join(frames, String(i).padStart(3, '0') + '.png'), Buffer.from(u.split(',')[1], 'base64')));
 const gif = path.join(ROOT, 'docs', `${pet}.gif`);
-execFileSync('python', [path.join(__dirname, 'gif.py'), frames, gif, String(STEP)], { stdio: 'inherit' });
+execFileSync('python', [path.join(__dirname, 'gif.py'), frames, gif, String(STEP), String(scale)], { stdio: 'inherit' });
 fs.rmSync(dir, { recursive: true, force: true });

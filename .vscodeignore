@@ -13,3 +13,5 @@ sprite-*.md
 docs/**
 tools/**
 art/**
+test/**
+.github/**

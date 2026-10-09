@@ -5,6 +5,7 @@
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/JuanCarlosCondori.capibara-pet?color=gold)](https://marketplace.visualstudio.com/items?itemName=JuanCarlosCondori.capibara-pet&ssr=false#review-details)
 [![Open VSX](https://img.shields.io/open-vsx/v/JuanCarlosCondori/capibara-pet?label=Open%20VSX&color=c160ef)](https://open-vsx.org/extension/JuanCarlosCondori/capibara-pet)
 [![Open VSX Downloads](https://img.shields.io/open-vsx/dt/JuanCarlosCondori/capibara-pet?label=Open%20VSX%20downloads&color=c160ef)](https://open-vsx.org/extension/JuanCarlosCondori/capibara-pet)
+[![Tests](https://github.com/JuKaCo/capibara-pet-for-VSC/actions/workflows/test.yml/badge.svg)](https://github.com/JuKaCo/capibara-pet-for-VSC/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 A little capybara pet that lives in a panel inside your VS Code editor. It strolls around calmly, runs while you type, gets scared when there are errors, sips its coffee during short breaks, and falls asleep if you leave it alone for a while.
@@ -221,6 +222,17 @@ Using **Cursor, Windsurf, VSCodium** or another editor based on Open VSX? It's t
 
 - No runtime dependencies and no configuration needed — it just works.
 - The pet lives in a webview panel (VS Code does not allow floating overlays on top of the editor), with a transparent background so it blends with your theme.
+
+## Development
+
+```bash
+npm install
+npm test          # type-check, unit tests and a headless-Chrome smoke test of the webview
+```
+
+Press `F5` in VS Code to try the extension in a new window (it needs Node 18 or newer). `npm test` runs the real webview for both pets in every time of day and weather and fails on any JavaScript error; it needs Chrome, Edge or Chromium (set `CHROME_PATH` to pick one) and runs on every push in GitHub Actions.
+
+The demo GIFs are recorded from the real webview too: `node tools/demo-gif.js` (condor) or `node tools/demo-gif.js capybara` write `docs/<pet>.gif`. This also needs Python with Pillow (`pip install pillow`).
 
 ## Credits
 

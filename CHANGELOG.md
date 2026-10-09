@@ -19,10 +19,15 @@ All notable changes to the **Capibara Pet** extension are documented here.
   reactions (including the terminal command classifier) and smoke-tests the real webview
   for both pets in every time of day and weather in headless Chrome, failing on any
   JavaScript error.
-- **A demo GIF of the condor** in the README, recorded from the real webview by
-  `tools/demo-gif.js`.
+- **Demo GIFs** recorded from the real webview by `tools/demo-gif.js`: the condor
+  (`docs/condor.gif`, in the README) and the capybara (`docs/capybara.gif`).
+- **Continuous integration**: `npm test` runs in GitHub Actions on every push and pull
+  request (badge in the README), and a *Development* section explains how to run and
+  test the extension.
 
 ### Changed
+- The Southern Cross is larger and clearer: background stars no longer crowd it, and
+  its brightest stars always show their spikes, so it reads even in a small panel.
 - At dawn the clouds in front of the Illimani are backlit (the sun rises behind the
   mountain) instead of glowing like the sky, which made them look like holes in the
   massif.

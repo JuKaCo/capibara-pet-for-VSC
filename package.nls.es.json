@@ -3,6 +3,7 @@
   "cmd.category": "Capibara Pet",
   "cmd.show.title": "Mostrar la Capibara",
   "cmd.pet.title": "Acariciar la Capibara",
+  "cmd.switchPet.title": "Cambiar de mascota (Capibara ↔ Cóndor)",
   "cmd.swim.title": "Ir a nadar",
   "cmd.feed.title": "Darle de comer a la Capibara",
   "cmd.toggle.title": "Mostrar/Ocultar la Capibara",
@@ -78,5 +79,5 @@
   "config.color.cream.desc": "Crema pálido, casi blanco.",
   "config.color.ash.desc": "Gris ceniza.",
   "config.color.desc": "El color del pelaje de la capibara.",
-  "config.baby.desc": "Una cría de capibara que sigue a la tuya a todas partes — y se sube a su lomo cuando nada."
+  "config.baby.desc": "La cría de tu mascota: una cría de capibara que sigue a la tuya a todas partes (y se sube a su lomo cuando nada), o el polluelo del cóndor esperando en su nido sobre la roca."
 }

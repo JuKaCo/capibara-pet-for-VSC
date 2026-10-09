@@ -47,6 +47,7 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Capibara Pet
 |---------|--------------|
 | **Capibara Pet: Show the Capybara** | Reveals and focuses the pet's view. |
 | **Capibara Pet: Pet the Capybara** | Give it some love — it hops with a ❤️. |
+| **Capibara Pet: Switch Pet (Capybara ↔ Condor)** | Swaps between the capybara and the Andean condor (each with its own habitat). |
 | **Capibara Pet: Go for a Swim** | Sends it for a dip in the lake (scenery backgrounds only). |
 | **Capibara Pet: Feed the Capybara** | Drops a slice of watermelon for it to munch. |
 | **Capibara Pet: Show/Hide the Capybara** | Quickly toggle the pet on or off. |
@@ -66,6 +67,7 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | `capibaraPet.name` | `""` | A name for your pet (shown on hover and in the status bar). |
 | `capibaraPet.size` | `84` | Size in pixels (40–160). `84` is perfectly crisp for both pets. |
 | `capibaraPet.speed` | `1` | Movement speed multiplier (0.25–3): walking for the capybara, flying for the condor. |
+| `capibaraPet.baby` | `true` | Its little one: a baby capybara that follows yours around, or the condor's chick in its nest on the rock. |
 
 **Scene**
 
@@ -100,7 +102,6 @@ Tweak the pet from **Settings** (`Ctrl+,` / `Cmd+,`) → search for "Capibara Pe
 | Setting | Default | What it does |
 |---------|:-------:|--------------|
 | `capibaraPet.color` | `classic` | Fur colour: classic, chocolate, golden, cream or ash. |
-| `capibaraPet.baby` | `true` | A baby capybara that follows yours around (and rides on its back when it swims). |
 
 > Tip: **click anywhere in the panel** to pet the capybara — it hops with a ❤️.
 > The capybara also **runs faster the faster you type**.
@@ -180,7 +181,11 @@ There are a couple of surprises too: keep it calm for a while in daylight and yo
   <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/condor-hero.png" alt="The Andean condor soaring over the Illimani" width="800">
 </p>
 
-Prefer wings? Set `capibaraPet.pet` to `condor`. The condor has its own, finer pixel art and lives in its own habitat: **the Illimani over La Paz** — the snowy three-summit massif, brown foothills and eroded badlands, the city on the slopes (its lights twinkle at night) and the altiplano with paja brava.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/condor.gif" alt="The condor soaring, landing on its rock by its chick, celebrating and taking off again" width="800">
+</p>
+
+Prefer wings? Set `capibaraPet.pet` to `condor` (or run *Switch Pet*). The condor has its own, finer pixel art and lives in its own habitat: **the Illimani over La Paz** — the snowy three-summit massif, brown foothills and eroded badlands, the city on the slopes (its lights twinkle at night) and the altiplano with paja brava.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/condor-moments.png" alt="Sunbathing on its rock, soaring at dawn, asleep at night, celebrating in a chullo at sunset" width="800">
@@ -193,6 +198,14 @@ It soars in slow circles riding thermals and flaps when you type; on a break it 
 </p>
 
 The altiplano is alive too: **dust devils** whirl across it — rising air the condor loves to circle over — **llamas** with coloured wool tassels wander by, stopping to graze, and a **vizcacha** peeks out by the rock.
+
+A fluffy grey **chick** waits in a nest on the rock (`capibaraPet.baby`): it always looks towards its parent, peeps now and then on its own, peeps and flaps its stubby wings while the condor perches beside it (facing the nest), and sleeps when night falls.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/JuKaCo/capibara-pet-for-VSC/main/docs/condor-sky.png" alt="The Milky Way and the Southern Cross over the Illimani at night, and the Willkakuti sunrise with a wiphala on the rock" width="800">
+</p>
+
+**The southern sky**: clear nights over the altiplano show the **Milky Way** and the **Southern Cross** above the Illimani. And on **June 21st, Willkakuti** — the Aymara New Year, *the return of the sun* — the first rays break over the mountain and a **wiphala** waves on the condor's rock.
 
 ## Install from the Marketplace
 

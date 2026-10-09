@@ -2,7 +2,7 @@
   "name": "capibara-pet",
   "displayName": "Capibara Pet",
   "description": "%ext.description%",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "publisher": "JuanCarlosCondori",
   "license": "MIT",
   "author": { "name": "Juan Carlos Condori" },
@@ -52,6 +52,11 @@
       {
         "command": "capibaraPet.swim",
         "title": "%cmd.swim.title%",
+        "category": "%cmd.category%"
+      },
+      {
+        "command": "capibaraPet.switchPet",
+        "title": "%cmd.switchPet.title%",
         "category": "%cmd.category%"
       },
       {
@@ -109,6 +114,12 @@
             "maximum": 3,
             "order": 4,
             "markdownDescription": "%config.speed.desc%"
+          },
+          "capibaraPet.baby": {
+            "type": "boolean",
+            "default": true,
+            "order": 5,
+            "markdownDescription": "%config.baby.desc%"
           }
         }
       },
@@ -307,12 +318,6 @@
               "%config.color.ash.desc%"
             ],
             "markdownDescription": "%config.color.desc%"
-          },
-          "capibaraPet.baby": {
-            "type": "boolean",
-            "default": true,
-            "order": 1,
-            "markdownDescription": "%config.baby.desc%"
           }
         }
       }
@@ -321,7 +326,8 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "node ./node_modules/typescript/bin/tsc -p ./",
-    "watch": "node ./node_modules/typescript/bin/tsc -watch -p ./"
+    "watch": "node ./node_modules/typescript/bin/tsc -watch -p ./",
+    "test": "node ./node_modules/typescript/bin/tsc -p ./ --noEmit && node test/reactions.test.js && node test/smoke.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.74.0",

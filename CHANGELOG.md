@@ -2,6 +2,31 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.12.0]
+
+### Added
+- **The condor's chick**: with `capibaraPet.baby` on (now in the *Pet* section, for both
+  pets), a fluffy grey chick waits in a nest on the condor's rock. It looks towards its
+  parent, peeps now and then, peeps and flaps its stubby wings while the condor perches
+  beside it — the condor now perches facing the nest — and sleeps at night.
+- **The southern night sky** over the Illimani: the **Milky Way** and the **Southern
+  Cross**, with more stars on clear nights.
+- **Willkakuti** (June 21st, the Aymara New Year): the first rays of the sun break over
+  the Illimani at dawn and a **wiphala** waves on the condor's rock (🌄 in the status bar
+  tooltip).
+- **Switch Pet (Capybara ↔ Condor)** command, to swap pets from the Command Palette.
+- **Tests** in the repo: `npm test` type-checks, unit-tests the Git and build/test
+  reactions (including the terminal command classifier) and smoke-tests the real webview
+  for both pets in every time of day and weather in headless Chrome, failing on any
+  JavaScript error.
+- **A demo GIF of the condor** in the README, recorded from the real webview by
+  `tools/demo-gif.js`.
+
+### Changed
+- At dawn the clouds in front of the Illimani are backlit (the sun rises behind the
+  mountain) instead of glowing like the sky, which made them look like holes in the
+  massif.
+
 ## [0.11.1]
 
 ### Fixed

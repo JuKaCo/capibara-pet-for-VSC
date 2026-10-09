@@ -160,7 +160,7 @@ class CapibaraViewProvider implements vscode.WebviewViewProvider {
       weather: cfg.get<string>('weather', 'auto'),
       seasons: cfg.get<boolean>('seasons', true),
       hemisphere: cfg.get<string>('hemisphere', 'auto'),
-      baby: !condor && cfg.get<boolean>('baby', true),
+      baby: cfg.get<boolean>('baby', true), // the capybara's baby, or the condor's chick in its nest
       fur: FURS[furName],
       kind: condor ? 'condor' : 'capybara',
       habitat: condor ? 'andes' : 'lake',
@@ -465,6 +465,8 @@ ${sounds ? `<script nonce="${nonce}" src="${this.uri(webview, 'chiptune.js')}"><
     } else if (C.mode === 'perched' || C.mode === 'ground') {
       if (C.mode === 'ground' && --C.ground <= 0) { takeOff(); }
       if (C.mode === 'perched' && !rest && s !== 'celebrate' && s !== 'scared') { takeOff(); }
+      const nest = C.mode === 'perched' ? pix.nest() : null; // perched, it looks after its chick
+      if (nest) { dir = nest.x > x + PET / 2 ? 1 : -1; }
       if (C.mode === 'ground' && busy) { takeOff(); }
       if (C.mode === 'ground' && C.mode !== 'air') { // a few clumsy hops now and then
         if ((C.ground >> 4) % 3 === 0 && !REDUCED) { x += dir * 0.7 * SPEED; moving = true; }
@@ -658,7 +660,7 @@ export function activate(context: vscode.ExtensionContext) {
   provider.onWorld = (w) => {
     const sky: { [k: string]: string } = { clear: w.mode === 'night' ? '🌙' : '☀️', cloudy: '☁️', rain: '🌧️', storm: '⛈️', fog: '🌫️', snow: '❄️' };
     const season: { [k: string]: string } = { spring: '🌸', summer: '🌿', autumn: '🍂', winter: '⛄' };
-    const holiday: { [k: string]: string } = { halloween: ' 🎃', christmas: ' 🎄', newyear: ' 🎆' };
+    const holiday: { [k: string]: string } = { halloween: ' 🎃', christmas: ' 🎄', newyear: ' 🎆', willkakuti: ' 🌄' };
     worldTip = w.mode === 'none' ? '' :
       ` · ${sky[w.weather] || ''} ${w.weather} · ${season[w.season] || ''} ${w.season}${holiday[w.holiday] || ''}`;
     updateStatusBar(lastMood);
@@ -685,6 +687,12 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('capibaraPet.feed', async () => {
       await vscode.commands.executeCommand('capibaraPet.view.focus');
       provider.notify('feed');
+    }),
+    vscode.commands.registerCommand('capibaraPet.switchPet', async () => {
+      const c = vscode.workspace.getConfiguration('capibaraPet');
+      const next = c.get<string>('pet', 'capybara') === 'condor' ? 'capybara' : 'condor';
+      await c.update('pet', next, vscode.ConfigurationTarget.Global);
+      await vscode.commands.executeCommand('capibaraPet.view.focus');
     }),
     vscode.commands.registerCommand('capibaraPet.toggle', async () => {
       const c = vscode.workspace.getConfiguration('capibaraPet');

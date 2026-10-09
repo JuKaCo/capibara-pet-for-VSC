@@ -273,7 +273,7 @@
       body: 'sunrise', light: 0.15, rim: '#ffe6a0',
       sky: ['#2a2c58', '#5a4a7a', '#b4707a', '#f0a878', '#ffd89a'],
       sun: ['#fff8d8', '#ffe08a', '#ffb050'],
-      cloud: ['#c8889a', '#ffd0a0'],
+      cloud: ['#a888a8', '#5e5078'], // backlit: the sun is behind the mountain (and the clouds)
       star: ['#4a4a7a', '#8a88c0', '#e8e0ff'], starSky: 0.3, starDensity: 120,
       ice: ['#2e2a4a', '#3e3860', '#524a74', '#6a5e88', '#8a7aa0'],
       rock: ['#1e1a2e', '#2a2440', '#363050', '#443c60'],
@@ -292,7 +292,7 @@
       body: 'moon', light: 0.6,
       sky: ['#050816', '#0a1128', '#0f1a3c', '#16244e', '#1e2e5e'],
       moon: ['#f6f2d4', '#d8d2a4', '#bdb68a'],
-      star: ['#5a6aa0', '#aab8e8', '#ffffff'], starSky: 1, starDensity: 20, meteors: true,
+      star: ['#5a6aa0', '#aab8e8', '#ffffff'], starSky: 1, starDensity: 34, meteors: true,
       ice: ['#283456', '#3a4a72', '#586a96', '#8294be', '#b2c2e2'],
       rock: ['#121828', '#1a2236', '#242d46', '#303a56'],
       far: '#2a3658', distant: ['#1a2236', '#2a3658', '#8294be'],
@@ -347,6 +347,7 @@
     if ((m === 10 && day >= 25) || (m === 11 && day === 1)) { return 'halloween'; }
     if (m === 12 && day >= 20 && day <= 26) { return 'christmas'; }
     if ((m === 12 && day === 31) || (m === 1 && day === 1)) { return 'newyear'; }
+    if (m === 6 && day === 21) { return 'willkakuti'; } // the Andean-Amazonian New Year
     return '';
   }
 
@@ -508,6 +509,21 @@
     ['.........', '.oo......', 'owwwo....', 'owkwwo...', '.owwwwo..', '.owwwwwo.', '.owwwwwot', '..ff.ff.t'],
   ];
   const VIZCACHA_C = { o: '#3a3028', w: '#b8ab98', k: '#0a0502', f: '#4a3e34', t: '#8a7a68' };
+  // The condor's chick: a fluffy grey ball in its nest (idle / peeping / flapping / asleep).
+  const CHICK = {
+    idle: ['....oooo....', '...oggggo...', '..ogggggko..', '..oggggggbb.', '...oggggob..', '..oggwwggo..',
+      '.oggwwwwggo.', '.ogwwwwwwgo.', '.oggwwwwggo.', '..oggggggo..', '...ff..ff...'],
+    peep: ['....oooo....', '...oggggo...', '..ogggggko..', '..oggggggbb.', '...oggggo...', '..oggwwggob.',
+      '.oggwwwwggo.', '.ogwwwwwwgo.', '.oggwwwwggo.', '..oggggggo..', '...ff..ff...'],
+    flap: ['....oooo....', '...oggggo...', '..ogggggko..', '..oggggggbb.', '...oggggob..', 'g.oggwwggo.g',
+      'goggwwwwggog', '.ogwwwwwwgo.', '.oggwwwwggo.', '..oggggggo..', '...ff..ff...'],
+    sleep: ['............', '....oooo....', '...oggggo...', '..ogggggoo..', '..oggggggbb.', '..oggwwggob.',
+      '.oggwwwwggo.', '.ogwwwwwwgo.', '.oggwwwwggo.', '..oggggggo..', '...ff..ff...'],
+  };
+  const CHICK_C = { o: '#3a3230', g: '#9a8f86', w: '#c8beb4', k: '#0a0502', b: '#2a2420', f: '#5a4e46' };
+  const NEST = ['b.d.bb.d.b.b', '.bdbbdbbdbd.', 'dbbdbbdbbdbd'];
+  // The wiphala, waved on Willkakuti (21 June): 7×7 squares in diagonal colour stripes.
+  const WIPHALA = ['#d8343a', '#f08a24', '#f2d23a', '#f4f4f0', '#2ea04a', '#2a6ad8', '#7a3aa8'];
   // A condor feather drifting down (two tilts).
   const FEATHER = [['.oo', 'oo.', 'o..'], ['oo.', '.oo', '..o']];
 
@@ -582,6 +598,8 @@
     // Andean life: the ground band and rock (for placing it), dust devils, a llama herd, a vizcacha.
     let ground = null, devils = [], herd = null, vizcacha = null;
     let fore = null; // andes: the rock and the nearest tussocks, drawn over the llamas and city lights
+    let skyTop = null; // andes: the lowest sky row at each column (the Illimani's crest), for stars and rays
+    let milky = null; // andes: the Milky Way's band, for the extra stars in it
     const scenic = mode !== 'none';
     const report = () => {
       if (o.onWorld) { o.onWorld({ mode, weather: world.weather, season: world.season, holiday: world.holiday }); }
@@ -873,6 +891,26 @@
       drawBody(b);
       const bp = painter(b, W, H, true);
 
+      // The Milky Way: a soft diagonal band of light with a dark dust lane (night, clear sky).
+      milky = null;
+      if (mode === 'night' && P.star && !P.wet && P.cloudMore === undefined) {
+        const x0 = -W * 0.1, y0 = horizon * 0.95, x1 = W * 1.1, y1 = -horizon * 0.15;
+        const len = Math.hypot(x1 - x0, y1 - y0), nx = -(y1 - y0) / len, ny = (x1 - x0) / len, bw = horizon * 0.2;
+        milky = (x, y) => {
+          const d = (x - x0) * nx + (y - y0) * ny;
+          const g = Math.exp(-(d / bw) * (d / bw)) * (0.5 + 0.5 * N.fbm(x * 0.02, y * 0.02, 3));
+          const lane = N.fbm(x * 0.05 + 9, y * 0.05, 2) > 0.55 ? Math.exp(-(((d - bw * 0.1) / (bw * 0.3)) ** 2)) * 0.8 : 0;
+          return g * (1 - lane);
+        };
+        const glow = mix(P.sky[4], '#c8d0ff', 0.35);
+        for (let y = 0; y < horizon; y++) {
+          for (let x = 0; x < W; x++) {
+            if (Math.abs(x - body.cx) <= body.R + 2 && Math.abs(y - body.cy) <= body.R + 2) { continue; } // the moon
+            if (dith(x, y, milky(x, y) * 0.75)) { bp.put(x, y, glow); }
+          }
+        }
+      }
+
       // Distant snowy cordillera to the left, faint far peaks to the right.
       const ridgeLine = (x, amp, f, seed) => horizon - Math.round(amp * (0.35 + 0.65 * N.fbm(x * f, seed, 3)));
       for (let x = 0; x < W; x++) {
@@ -960,6 +998,7 @@
           clouds.push({ cv, x: rs() * (W + cv.width) - cv.width, v: 0.03 + rs() * 0.03, y: Math.round(rs() * horizon * 0.35) });
         }
       }
+      skyTop = (x) => { const c = crest(x); return c === null ? horizon : c; };
       if (P.star) {
         const skyH = Math.max(2, Math.round(horizon * P.starSky));
         const n = Math.round((W * skyH) / P.starDensity);
@@ -968,6 +1007,14 @@
           const c = crest(x);
           if ((c !== null && y >= c) || (Math.abs(x - body.cx) < body.R + 3 && Math.abs(y - body.cy) < body.R + 3)) { continue; }
           stars.push({ x, y, p: rs() * 6.283, s: 0.04 + rs() * 0.12, big: rs() < 0.12 });
+        }
+        if (milky) { // countless faint stars crowd the Milky Way
+          const m = Math.round((W * horizon) / 14);
+          for (let i = 0; i < m; i++) {
+            const x = Math.floor(rs() * W), y = Math.floor(rs() * horizon), keep = rs();
+            if (keep > milky(x, y) || y >= skyTop(x) || (Math.abs(x - body.cx) < body.R + 3 && Math.abs(y - body.cy) < body.R + 3)) { continue; }
+            stars.push({ x, y, p: rs() * 6.283, s: 0.03 + rs() * 0.08, big: false, dim: true });
+          }
         }
       }
 
@@ -1072,8 +1119,12 @@
           fp2.put(x, y, c);
         }
       }
-      perchSpot = { x: rx0 + rw * 0.45, y: rockTop(Math.round(rx0 + rw * 0.45)), w: rw };
+      // With the chick, the condor perches left of centre and the nest sits to the right.
+      const chick = o.baby && condor, pf = chick ? 0.24 : 0.45;
+      perchSpot = { x: rx0 + rw * pf, y: rockTop(Math.round(rx0 + rw * pf)), w: rw };
       ground = { fgTop, pathTop, rockX: rx0, rockW: rw, rockBase: rBase, rockTop, herdY: fgTop + Math.round((pathTop - fgTop) * 0.55) };
+      ground.nest = chick ? { x: Math.round(rx0 + rw * 0.64), y: rockTop(Math.round(rx0 + rw * 0.64)) } : null; // on the flat top
+      ground.flag = { x: Math.round(rx0 + rw * 0.9), y: rockTop(Math.round(rx0 + rw * 0.9)) }; // clear of the perch
       devils = []; herd = null; vizcacha = null;
 
       // Paja brava: golden spiky tussocks behind the path (and a few in front); the ones
@@ -1111,6 +1162,8 @@
       }
       if (ground) { drawHerd(); drawVizcacha(); }
       if (fore) { sc.drawImage(fore, 0, 0); } // the rock and the nearest tussocks hide what's behind
+      if (ground && ground.nest) { drawChick(); }
+      if (ground && world.holiday === 'willkakuti') { drawWiphala(); }
       if (ground) { drawDevils(); } // dust devils run along the path, in front of the rock
     }
 
@@ -1189,6 +1242,41 @@
       // Sits on a low ledge at the rock's left foot.
       const x = g.rockX - 7 * HK, y = g.rockBase; // half-hidden behind the rock's left edge
       blitK(sc, VIZCACHA[v.ears > 0 ? 1 : 0], VIZCACHA_C, x, y - 8 * HK + 1, false, HK);
+    }
+
+    // The condor's chick in its nest on the rock: it peeps now and then, flaps its little
+    // wings when its parent lands beside it, and sleeps at night or when the parent does.
+    let chickPeep = 0;
+    function drawChick() {
+      const n = ground.nest, pet = last;
+      const parentHere = !!pet && pet.shadowAt !== undefined && pet.shadowAt === pet.bottom && pet.bottom > 4;
+      const asleep = mode === 'night' || (parentHere && pet.state === 'sleep');
+      let frame = 'idle';
+      if (asleep) { frame = 'sleep'; }
+      else if (parentHere && anim && pet.state !== 'sleep') { frame = (t >> 2) % 2 ? 'flap' : 'peep'; }
+      else {
+        if (anim && chickPeep <= 0 && Math.random() < 1 / 220) { chickPeep = 10; sfx('chirp'); }
+        if (chickPeep > 0) { chickPeep--; frame = (chickPeep >> 2) % 2 ? 'peep' : 'idle'; }
+      }
+      const dim = (c) => (mode === 'night' ? mix(c, '#1a1f30', 0.45) : mode === 'sunset' ? mix(c, '#7a4a5a', 0.15) : c);
+      const cc = {}; for (const k in CHICK_C) { cc[k] = dim(CHICK_C[k]); }
+      const bm = CHICK[frame], face = pet && pet.x / PX + o.pet / PX / 2 < n.x ? -1 : 1; // looks at its parent
+      blitK(sc, bm, cc, n.x - 6 * HK, n.y - bm.length * HK + 2 * HK, face < 0, HK);
+      blitK(sc, NEST, { b: dim('#7a5a3a'), d: dim('#4e3828') }, n.x - 6 * HK, n.y - NEST.length * HK + HK, false, HK);
+      if (asleep && anim && t % 30 === 0) { add({ k: 'zz', x: n.x + 4 * HK, y: n.y - 10 * HK, vx: 0.08, vy: -0.12, life: 20 }); }
+    }
+
+    // Willkakuti: a wiphala waves on a pole planted on the rock.
+    function drawWiphala() {
+      const f = ground.flag, k = HK, poleH = 22 * k;
+      dot(sc, mode === 'night' ? '#2a2018' : '#5a4030', f.x, f.y - poleH, Math.max(1, k >> 1), poleH);
+      for (let c = 0; c < 7; c++) {
+        const wave = anim ? Math.round(Math.sin(t * 0.15 - c * 0.6) * k * 0.8) : 0;
+        for (let r = 0; r < 7; r++) {
+          const col = WIPHALA[((c + r - 3) % 7 + 7) % 7]; // the white diagonal runs bottom-left to top-right
+          dot(sc, mode === 'night' ? mix(col, '#1a1f30', 0.45) : col, f.x + 1 + c * k, f.y - poleH + r * k + wave, k, k);
+        }
+      }
     }
 
     // Where a thermal rises (a dust devil), for the condor to circle over: CSS x, or null.
@@ -1336,7 +1424,7 @@
         if (birds.x < -6 - 6 * birds.n || birds.x > W + 6 + 6 * birds.n) { birds = null; }
       }
       for (const s of stars) {
-        const lv = clamp(Math.floor((Math.sin(t * s.s + s.p) + 1) * 1.5), 0, 2);
+        const lv = s.dim ? (Math.sin(t * s.s + s.p) > 0.3 ? 1 : 0) : clamp(Math.floor((Math.sin(t * s.s + s.p) + 1) * 1.5), 0, 2);
         dot(sc, P.star[lv], s.x, s.y);
         if (s.big && lv === 2) {
           dot(sc, P.star[1], s.x - 1, s.y); dot(sc, P.star[1], s.x + 1, s.y);
@@ -1358,8 +1446,39 @@
         m.x += m.vx; m.y += 0.5;
         if (--m.life <= 0 || m.y > horizon - 2) { meteor = null; }
       }
+      drawSouthernCross();
+      drawSunRays();
       drawFireworks();
       drawLightning();
+    }
+
+    // The Southern Cross and its two pointers (α and β Centauri), in the southern night sky.
+    const CRUX = [[0, -1, 2], [0.15, 1.1, 2], [-0.6, 0.15, 2], [0.55, -0.15, 1], [0.3, 0.45, 0], [-2.4, 0.95, 2], [-1.7, 0.75, 2]];
+    function drawSouthernCross() {
+      if (mode !== 'night' || !P.star || P.wet || !(habitat === 'andes' || world.south)) { return; }
+      const cx = W * 0.32, cy = horizon * 0.3, k = Math.max(3, horizon * 0.07);
+      CRUX.forEach(([dx, dy, mag], i) => {
+        const x = Math.round(cx + dx * k), y = Math.round(cy + dy * k);
+        if (x < 1 || x >= W - 1 || y < 1 || (skyTop && y >= skyTop(x) - 1)) { return; }
+        const tw = Math.sin(t * (0.05 + i * 0.013) + i) > -0.6;
+        dot(sc, P.star[2], x, y);
+        if (mag >= 1 && tw) { dot(sc, P.star[2], x - 1, y); dot(sc, P.star[2], x + 1, y); dot(sc, P.star[2], x, y - 1); dot(sc, P.star[2], x, y + 1); }
+        if (mag >= 2 && HK > 1 && tw) { dot(sc, P.star[1], x - 2, y); dot(sc, P.star[1], x + 2, y); dot(sc, P.star[1], x, y - 2); dot(sc, P.star[1], x, y + 2); }
+      });
+    }
+
+    // Willkakuti's dawn: the first rays fanning out from behind the Illimani.
+    function drawSunRays() {
+      if (world.holiday !== 'willkakuti' || P.body !== 'sunrise' || body.cx < 0 || !skyTop) { return; }
+      const len = horizon * 0.9;
+      for (let r = 0; r < 9; r++) {
+        const a = -Math.PI * (0.12 + r * 0.095), sway = anim ? Math.sin(t * 0.02 + r) * 0.02 : 0;
+        for (let d = body.R + 3; d < len; d++) {
+          const x = Math.round(body.cx + Math.cos(a + sway) * d), y = Math.round(body.cy + Math.sin(a + sway) * d);
+          if (x < 0 || x >= W || y < 0 || y >= skyTop(x)) { continue; }
+          if (dith(x, y, 0.4 * (1 - d / len))) { dot(sc, P.sun[0], x, y); }
+        }
+      }
     }
 
     // New Year's night: bursts of coloured pixels over the hills.
@@ -1543,7 +1662,7 @@
     // The baby follows its mum: walks behind her, runs when she runs, naps next to
     // her, hops when she celebrates and presses close when she gets scared.
     function updateBaby(p) {
-      if (!o.baby || !p) { baby = null; return; }
+      if (!o.baby || condor || !p) { baby = null; return; }
       const mL = p.x / PX, mW = o.pet / PX, foot = row(o.feet);
       if (!baby) { baby = { x: mL + (p.face > 0 ? 0 : mW - BABY_W), face: p.face, step: 0 }; }
       const b = baby;
@@ -1998,6 +2117,7 @@
       puff(p) { if (anim) { dust(Object.assign({}, p, { bottom: 4, alt: 0 }), 6); } },
       // The condor's rock: centre x and the CSS bottom offset of its top, or null.
       thermal() { return habitat === 'andes' ? thermalX() : null; },
+      nest() { return habitat === 'andes' && ground && ground.nest ? { x: ground.nest.x * PX } : null; },
       perch() {
         if (habitat !== 'andes' || !perchSpot || !scenic) { return null; }
         return { x: perchSpot.x * PX, bottom: (H - perchSpot.y) * PX };

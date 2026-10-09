@@ -3,6 +3,7 @@
   "cmd.category": "Capibara Pet",
   "cmd.show.title": "Show the Capybara",
   "cmd.pet.title": "Pet the Capybara",
+  "cmd.switchPet.title": "Switch Pet (Capybara ↔ Condor)",
   "cmd.swim.title": "Go for a Swim",
   "cmd.feed.title": "Feed the Capybara",
   "cmd.toggle.title": "Show/Hide the Capybara",
@@ -78,5 +79,5 @@
   "config.color.cream.desc": "Pale cream, almost white.",
   "config.color.ash.desc": "Ash grey.",
   "config.color.desc": "The capybara's fur colour.",
-  "config.baby.desc": "A baby capybara that follows yours around — and rides on its back when it swims."
+  "config.baby.desc": "Your pet's little one: a baby capybara that follows yours around (and rides on its back when it swims), or the condor's chick waiting in its nest on the rock."
 }

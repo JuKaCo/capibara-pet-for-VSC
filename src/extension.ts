@@ -43,13 +43,13 @@ const FURS: { [name: string]: { f: string; h: string; s: string; d: string } } =
 // is the level-wings frame of `fly`, held still.
 const CONDOR_GRID = 84;
 const CONDOR_POSES: { [pose: string]: { n: number; dur: number; head: [number, number] } } = {
-  fly: { n: 4, dur: 0.48, head: [52, 29] },
-  hop: { n: 4, dur: 0.6, head: [51, 37] },
-  perch: { n: 2, dur: 1.8, head: [48, 29] },
-  spread: { n: 2, dur: 0.5, head: [45, 37] },
-  scared: { n: 2, dur: 0.24, head: [45, 21] },
-  sunbathe: { n: 2, dur: 2.2, head: [42, 29] },
-  sleep: { n: 2, dur: 2.4, head: [46, 31] },
+  fly: { n: 4, dur: 0.48, head: [58, 34] },
+  hop: { n: 4, dur: 0.6, head: [57, 36] },
+  perch: { n: 2, dur: 1.8, head: [53, 28] },
+  spread: { n: 2, dur: 0.5, head: [46, 37] },
+  scared: { n: 2, dur: 0.24, head: [53, 19] },
+  sunbathe: { n: 2, dur: 2.2, head: [51, 29] },
+  sleep: { n: 2, dur: 2.4, head: [54, 31] },
 };
 
 interface SheetCfg { n: number; dur: number; }

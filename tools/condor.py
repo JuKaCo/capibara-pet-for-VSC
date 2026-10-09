@@ -160,6 +160,28 @@ def main():
                     if px[x, y][3] and any(not (0 <= x + a < s.width and 0 <= y + b < s.height) or not px[x + a, y + b][3] for a, b in N4):
                         px[x, y] = outline + (255,)
 
+    # The bald head's skin tone: the pinkish palette colour most used in the top quarter of
+    # the perched bird (the legs share it, so anchors only look at the upper body).
+    ref_im = small['perch'][0]['im']; rpx = ref_im.load(); bb = ref_im.getbbox()
+    counts = {}
+    for y in range(bb[1], bb[1] + (bb[3] - bb[1]) // 4):
+        for x in range(ref_im.width):
+            c = rpx[x, y]
+            if c[3] and c[0] > c[1] + 12 and c[0] >= c[2]:
+                counts[c[:3]] = counts.get(c[:3], 0) + 1
+    skin = max(counts, key=counts.get)
+
+    def head_anchor(f):
+        """Top-centre of the skull: mean column of the skin in the upper half of the body,
+        and the highest opaque pixel (comb included) in the columns around it."""
+        px = f.load(); b = f.getbbox()
+        pts = [(x, y) for y in range(b[1], b[1] + (b[3] - b[1]) // 2) for x in range(f.width) if px[x, y][3] and px[x, y][:3] == skin]
+        if not pts:
+            return None
+        hx = round(sum(p[0] for p in pts) / len(pts))
+        top = min(y for y in range(f.height) for x in range(max(0, hx - 3), min(f.width, hx + 4)) if px[x, y][3])
+        return hx, top
+
     # Pack into cells.
     os.makedirs(args.out, exist_ok=True)
     report = {}
@@ -188,9 +210,9 @@ def main():
                     print(f'warning: {pose} frame {i} spills out of its cell', (ox, oy, s.size))
                 sheet.alpha_composite(s, (i * CELL + ox, oy))
         sheet.save(os.path.join(args.out, f'{pose}_sheet.png'), optimize=True)
-        # head anchor (frame 1): centre column and top row of the head, in cell px
-        f0 = sheet.crop((0, 0, CELL, CELL)); hbx = head_box(f0)
-        report[pose] = (len(cells), None if not hbx else (round((hbx[0] + hbx[2]) / 2), hbx[1]))
+        # head anchor (the frame the extension shows still: level wings for fly), in cell px
+        fi = 1 if pose == 'fly' else 0
+        report[pose] = (len(cells), head_anchor(sheet.crop((fi * CELL, 0, fi * CELL + CELL, CELL))))
         if args.preview:
             os.makedirs(args.preview, exist_ok=True)
             bg = Image.new('RGBA', sheet.size, (200, 220, 240, 255)); bg.alpha_composite(sheet)

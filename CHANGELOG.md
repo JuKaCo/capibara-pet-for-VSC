@@ -2,6 +2,18 @@
 
 All notable changes to the **Capibara Pet** extension are documented here.
 
+## [0.11.1]
+
+### Fixed
+- **The condor's chullo** now sits on its head (the brim over the skull, the ear flaps
+  hanging beside it) in every pose, instead of floating above and to one side. The head
+  positions are measured more precisely (`tools/condor.py` too).
+- **Depth around the condor's rock**: the rock and the nearest paja brava are now drawn
+  in front of what lies behind them — the city lights no longer shine through the rock
+  at night, and the llamas walk *behind* the rock and the near tussocks (their hooves
+  hidden in the grass) instead of seeming to float in front of them. The vizcacha peeks
+  out from behind the rock's edge.
+
 ## [0.11.0]
 
 ### Added

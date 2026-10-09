@@ -581,6 +581,7 @@
     let perchSpot = null, cityLights = [];
     // Andean life: the ground band and rock (for placing it), dust devils, a llama herd, a vizcacha.
     let ground = null, devils = [], herd = null, vizcacha = null;
+    let fore = null; // andes: the rock and the nearest tussocks, drawn over the llamas and city lights
     const scenic = mode !== 'none';
     const report = () => {
       if (o.onWorld) { o.onWorld({ mode, weather: world.weather, season: world.season, holiday: world.holiday }); }
@@ -692,6 +693,7 @@
 
     function build() {
       if (habitat === 'andes') { buildAndes(); return; }
+      fore = null;
       // Separate seeded streams: the landscape is identical at every time of day.
       const rl = mulberry32(0x5eed1), rs = mulberry32(0x5eed2), rf = mulberry32(0x5eed3);
       pathTop = clamp(row(o.feet) - 2, 3, H - 2);
@@ -854,6 +856,8 @@
 
     function buildAndes() {
       const rs = mulberry32(0xa11e2), rf = mulberry32(0xa11e3);
+      fore = layer(W, H);
+      const fp2 = painter(fore.getContext('2d'), W, H, false);
       const N = valueNoise(7), N2 = valueNoise(11);
       water = null; lake = null; shimmer = []; swimMin = 0; swimMax = -1; log = null;
       pumpkins = []; trees = []; flies = []; cityLights = [];
@@ -1065,14 +1069,16 @@
           const edge = y === top || rockTop(x - 1) > y || rockTop(x + 1) > y;
           let c = edge ? P.rockFg[0] : tone(P.rockFg, v, x, y);
           if (!edge && N2(x * 0.7, y * 0.7 + 40) > 0.88) { c = mix(P.tuftHi, P.rockFg[2], 0.55); } // lichen
-          fp.put(x, y, c);
+          fp2.put(x, y, c);
         }
       }
       perchSpot = { x: rx0 + rw * 0.45, y: rockTop(Math.round(rx0 + rw * 0.45)), w: rw };
-      ground = { fgTop, pathTop, rockX: rx0, rockW: rw, rockBase: rBase, rockTop };
+      ground = { fgTop, pathTop, rockX: rx0, rockW: rw, rockBase: rBase, rockTop, herdY: fgTop + Math.round((pathTop - fgTop) * 0.55) };
       devils = []; herd = null; vizcacha = null;
 
-      // Paja brava: golden spiky tussocks behind the path (and a few in front).
+      // Paja brava: golden spiky tussocks behind the path (and a few in front); the ones
+      // nearer than the llamas' line go on the foreground layer, over the passing animals.
+      const herdY = fgTop + Math.round((pathTop - fgTop) * 0.55);
       const tufts = Math.round(W / 6);
       for (let i = 0; i < tufts; i++) {
         const x = Math.floor(rf() * W), front_ = rf() < 0.2;
@@ -1083,11 +1089,12 @@
           const len = Math.round(hh * (1 - Math.abs(bl) / (k + 1) * 0.35));
           for (let j = 0; j < len; j++) {
             const xx = Math.round(x + bl + (bl * 0.7 * j) / len);
-            fp.put(xx, by - j, j > len * 0.55 ? P.tuftHi : P.tuft);
+            (by > herdY ? fp2 : fp).put(xx, by - j, j > len * 0.55 ? P.tuftHi : P.tuft);
           }
         }
       }
       fp.done();
+      fp2.done();
 
       buildWeather(rf);
     }
@@ -1096,13 +1103,15 @@
     // city lights at dusk and at night.
     function drawAndes() {
       if (habitat !== 'andes') { return; }
-      if (ground) { drawDevils(); drawHerd(); drawVizcacha(); }
       if (mode === 'night' || mode === 'sunset') {
         for (const l of cityLights) {
           if (mode === 'sunset' && (l.p * 10) % 3 > 1) { continue; } // only some lit at dusk
           if (Math.sin(t * 0.05 + l.p) > -0.7) { dot(sc, l.c, l.x, l.y); }
         }
       }
+      if (ground) { drawHerd(); drawVizcacha(); }
+      if (fore) { sc.drawImage(fore, 0, 0); } // the rock and the nearest tussocks hide what's behind
+      if (ground) { drawDevils(); } // dust devils run along the path, in front of the rock
     }
 
     // Dust devils: whirlwinds of dust crossing the dry altiplano (thermals the condor rides).
@@ -1146,7 +1155,7 @@
           const edge = mix(fur[1], '#1a1410', 0.5); // a soft outline in the wool's own shade
           m.push({ c: { o: edge, w: fur[0], s: fur[1], k: '#0a0502', f: mix(edge, '#000000', 0.3), t: TASSELS[(i + Math.floor(Math.random() * 4)) % 4] }, off: i * 17 + Math.floor(Math.random() * 5), graze: 0 });
         }
-        herd = { x: d > 0 ? -8 : W + 8, d, m, y: ground.fgTop + Math.round((ground.pathTop - ground.fgTop) * 0.55) };
+        herd = { x: d > 0 ? -8 : W + 8, d, m, y: ground.herdY };
       }
       if (!herd) { return; }
       const hd = herd;
@@ -1178,7 +1187,7 @@
       if (anim) { v.life--; if (Math.random() < 1 / 60) { v.ears = 6; } if (v.ears > 0) { v.ears--; } }
       if (v.life <= 0 || near) { vizcacha = null; return; }
       // Sits on a low ledge at the rock's left foot.
-      const x = g.rockX - 9 * HK, y = g.rockBase;
+      const x = g.rockX - 7 * HK, y = g.rockBase; // half-hidden behind the rock's left edge
       blitK(sc, VIZCACHA[v.ears > 0 ? 1 : 0], VIZCACHA_C, x, y - 8 * HK + 1, false, HK);
     }
 
@@ -1817,12 +1826,14 @@
       if (!parts.length && !fxDirty && !perch && !orange && !hat && !precip && !food) { return; }
       fc.clearRect(0, 0, W, H);
       drawFood();
+      // On the condor, hats are worn: the brim (row 4) covers the top of the skull.
+      const hatY = (bm, k) => (condor ? a.y + 1 - 4 * k : a.y - bm.length * k + 1);
       if (orange > 0 && a) {
         const bm = condor ? CHULLO : a.small ? ORANGE_S : ORANGE, k = condor ? HK : 1;
-        blitK(fc, bm, condor ? CHULLO_C : ORANGE_C, a.x - ((bm[0].length * k) >> 1), a.y - bm.length * k + 1, p.face < 0, k);
+        blitK(fc, bm, condor ? CHULLO_C : ORANGE_C, a.x - ((bm[0].length * k) >> 1), hatY(bm, k), p.face < 0, k);
       } else if (hat) {
         const bm = a.small ? HAT_S : HAT;
-        blitK(fc, bm, HAT_C, a.x - ((bm[0].length * HK) >> 1), a.y - bm.length * HK + 1, (swimmer ? swimmer.face : p.face) < 0, HK);
+        blitK(fc, bm, HAT_C, a.x - ((bm[0].length * HK) >> 1), hatY(bm, HK), (swimmer ? swimmer.face : p.face) < 0, HK);
       }
       if (perch) {
         const x = Math.round(perch.x), y = Math.round(perch.y);
